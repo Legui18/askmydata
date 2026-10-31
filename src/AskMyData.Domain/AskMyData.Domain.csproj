@@ -1,0 +1,8 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Domain layer: references no other project and no package beyond the BCL (Requirement 1.5). -->
+  <PropertyGroup>
+    <RootNamespace>AskMyData.Domain</RootNamespace>
+  </PropertyGroup>
+
+</Project>

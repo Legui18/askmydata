@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>AskMyData.Evals</RootNamespace>
+    <IsPackable>false</IsPackable>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Testcontainers.MsSql" Version="4.16.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\AskMyData.Domain\AskMyData.Domain.csproj" />
+    <ProjectReference Include="..\..\src\AskMyData.Application\AskMyData.Application.csproj" />
+    <ProjectReference Include="..\..\src\AskMyData.Infrastructure\AskMyData.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>

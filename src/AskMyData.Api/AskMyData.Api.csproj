@@ -1,0 +1,14 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <!-- Api layer: composition root, references all layers. -->
+  <PropertyGroup>
+    <RootNamespace>AskMyData.Api</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\AskMyData.Domain\AskMyData.Domain.csproj" />
+    <ProjectReference Include="..\AskMyData.Application\AskMyData.Application.csproj" />
+    <ProjectReference Include="..\AskMyData.Infrastructure\AskMyData.Infrastructure.csproj" />
+  </ItemGroup>
+
+</Project>
