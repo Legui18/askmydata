@@ -15,4 +15,9 @@
     <PackageReference Include="Microsoft.Data.SqlClient" Version="7.1.1" />
   </ItemGroup>
 
+  <ItemGroup>
+    <InternalsVisibleTo Include="AskMyData.UnitTests" />
+    <InternalsVisibleTo Include="AskMyData.Evals" />
+  </ItemGroup>
+
 </Project>
