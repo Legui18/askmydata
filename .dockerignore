@@ -1,0 +1,8 @@
+**/bin/
+**/obj/
+.git/
+.kiro/
+tests/
+artifacts/
+*.log
+.env
