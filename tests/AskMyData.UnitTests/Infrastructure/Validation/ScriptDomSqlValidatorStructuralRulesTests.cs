@@ -130,7 +130,8 @@ public sealed class ScriptDomSqlValidatorStructuralRulesTests
             ReasonCodes.FunctionNotAllowed,
             ReasonCodes.SelectStar,
             ReasonCodes.TableNotAllowed,
-            ReasonCodes.ColumnNotAllowed);
+            ReasonCodes.ColumnNotAllowed,
+            ReasonCodes.MetricDefinitionMismatch);
     }
 
     [Theory]

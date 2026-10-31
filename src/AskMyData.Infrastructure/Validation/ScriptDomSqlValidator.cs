@@ -29,10 +29,10 @@ namespace AskMyData.Infrastructure.Validation;
 ///   <item><description>SELECT_STAR: a <c>*</c> or <c>t.*</c> select item; <c>COUNT(*)</c> passes.</description></item>
 ///   <item><description>TABLE_NOT_ALLOWED: a base table or view outside the Allowlist, resolved by <see cref="ScopeResolver"/> (CTE names excluded, default schema <c>dbo</c>).</description></item>
 ///   <item><description>COLUMN_NOT_ALLOWED: a column that is not an Allowlist column of its base table, a CTE or derived-table output column, or an ORDER BY select-list alias.</description></item>
-///   <item><description>METRIC_DEFINITION_MISMATCH: a declared Metric that is unknown or not a sub-tree of the query (task 4.3).</description></item>
+///   <item><description>METRIC_DEFINITION_MISMATCH: a declared Metric that is (a) not defined in the Semantic_Layer or (b) whose Normalized_Syntax_Tree (<see cref="SyntaxTreeNormalizer"/>) is not a sub-tree of the query's; skipped when Metric_Usage is empty.</description></item>
 /// </list>
-/// Rule 15 is added to <see cref="Rules"/> by task 4.3; each rule implements
-/// <see cref="IValidationRule"/> with its order number, and the list is sorted by order.
+/// Each rule implements <see cref="IValidationRule"/> with its order number, and the list is
+/// sorted by order.
 /// </remarks>
 public sealed class ScriptDomSqlValidator : ISqlValidator
 {
@@ -61,7 +61,7 @@ public sealed class ScriptDomSqlValidator : ISqlValidator
         new SelectStarRule(),
         new TableNotAllowedRule(),
         new ColumnNotAllowedRule(),
-        // Extension point: rule 15 MetricDefinitionMismatchRule (task 4.3).
+        new MetricDefinitionMismatchRule(),
     }.OrderBy(r => r.Order).ToArray();
 
     /// <inheritdoc />

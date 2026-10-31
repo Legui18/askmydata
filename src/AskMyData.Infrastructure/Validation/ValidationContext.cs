@@ -9,8 +9,8 @@ namespace AskMyData.Infrastructure.Validation;
 /// holds no mutable state.
 /// </summary>
 /// <remarks>
-/// <see cref="Scopes"/> serves rules 13 and 14; task 4.3 uses it with
-/// <see cref="SemanticLayer"/> and <see cref="MetricUsage"/> for rule 15. Rules after rule 1
+/// <see cref="Scopes"/> serves rules 13 and 14, and rule 15 uses it with
+/// <see cref="SemanticLayer"/> and <see cref="MetricUsage"/> to normalize the query. Rules after rule 1
 /// may assume <see cref="ParseErrors"/> is empty and the script contains exactly one statement
 /// from rule 3 on.
 /// </remarks>
