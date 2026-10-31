@@ -9,14 +9,15 @@ namespace AskMyData.Infrastructure.Validation;
 /// holds no mutable state.
 /// </summary>
 /// <remarks>
-/// Extension point: task 4.2 adds the <c>ScopeModel</c> used by rules 13 and 14, and task 4.3
-/// uses <see cref="SemanticLayer"/> and <see cref="MetricUsage"/> for rule 15. Rules after rule 1
+/// <see cref="Scopes"/> serves rules 13 and 14; task 4.3 uses it with
+/// <see cref="SemanticLayer"/> and <see cref="MetricUsage"/> for rule 15. Rules after rule 1
 /// may assume <see cref="ParseErrors"/> is empty and the script contains exactly one statement
 /// from rule 3 on.
 /// </remarks>
 internal sealed class ValidationContext
 {
     private IReadOnlyList<TSqlFragment>? _nodes;
+    private ScopeModel? _scopes;
 
     public ValidationContext(
         string sql,
@@ -58,6 +59,14 @@ internal sealed class ValidationContext
     /// use so a PARSE_ERROR exits without walking the tree.
     /// </summary>
     public IReadOnlyList<TSqlFragment> Nodes => _nodes ??= FragmentCollector.Collect(Script);
+
+    /// <summary>
+    /// Table and column resolution for rules 13 to 15. Computed on first use (rule 13), when the
+    /// script is known to hold exactly one SELECT statement; otherwise empty.
+    /// </summary>
+    public ScopeModel Scopes => _scopes ??= Statements is [SelectStatement select]
+        ? ScopeResolver.Resolve(select, SemanticLayer, Nodes)
+        : ScopeModel.Empty;
 
     private sealed class FragmentCollector : TSqlFragmentVisitor
     {

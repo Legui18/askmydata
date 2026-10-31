@@ -128,7 +128,9 @@ public sealed class ScriptDomSqlValidatorStructuralRulesTests
             ReasonCodes.SystemObjectNotAllowed,
             ReasonCodes.TableFunctionNotAllowed,
             ReasonCodes.FunctionNotAllowed,
-            ReasonCodes.SelectStar);
+            ReasonCodes.SelectStar,
+            ReasonCodes.TableNotAllowed,
+            ReasonCodes.ColumnNotAllowed);
     }
 
     [Theory]

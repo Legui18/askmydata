@@ -27,11 +27,11 @@ namespace AskMyData.Infrastructure.Validation;
 ///   <item><description>TABLE_FUNCTION_NOT_ALLOWED: a schema-object or built-in table-valued function not in the Allowed_Table_Function_List.</description></item>
 ///   <item><description>FUNCTION_NOT_ALLOWED: a schema-qualified scalar or aggregate function; unqualified built-ins pass.</description></item>
 ///   <item><description>SELECT_STAR: a <c>*</c> or <c>t.*</c> select item; <c>COUNT(*)</c> passes.</description></item>
-///   <item><description>TABLE_NOT_ALLOWED: a base table or view outside the Allowlist (task 4.2).</description></item>
-///   <item><description>COLUMN_NOT_ALLOWED: a column outside the Allowlist of its resolved source (task 4.2).</description></item>
+///   <item><description>TABLE_NOT_ALLOWED: a base table or view outside the Allowlist, resolved by <see cref="ScopeResolver"/> (CTE names excluded, default schema <c>dbo</c>).</description></item>
+///   <item><description>COLUMN_NOT_ALLOWED: a column that is not an Allowlist column of its base table, a CTE or derived-table output column, or an ORDER BY select-list alias.</description></item>
 ///   <item><description>METRIC_DEFINITION_MISMATCH: a declared Metric that is unknown or not a sub-tree of the query (task 4.3).</description></item>
 /// </list>
-/// Rules 13 to 15 are added to <see cref="Rules"/> by tasks 4.2 and 4.3; each one implements
+/// Rule 15 is added to <see cref="Rules"/> by task 4.3; each rule implements
 /// <see cref="IValidationRule"/> with its order number, and the list is sorted by order.
 /// </remarks>
 public sealed class ScriptDomSqlValidator : ISqlValidator
@@ -59,8 +59,9 @@ public sealed class ScriptDomSqlValidator : ISqlValidator
         new TableFunctionNotAllowedRule(),
         new FunctionNotAllowedRule(),
         new SelectStarRule(),
-        // Extension point: rule 13 TableNotAllowedRule and rule 14 ColumnNotAllowedRule (task 4.2),
-        // rule 15 MetricDefinitionMismatchRule (task 4.3).
+        new TableNotAllowedRule(),
+        new ColumnNotAllowedRule(),
+        // Extension point: rule 15 MetricDefinitionMismatchRule (task 4.3).
     }.OrderBy(r => r.Order).ToArray();
 
     /// <inheritdoc />
