@@ -1,0 +1,34 @@
+{
+  "id": "dim-orders-by-channel",
+  "category": "dimension",
+  "metric": "OrderCount",
+  "question": "How many orders came through each channel?",
+  "referenceSql": "SELECT o.Channel, COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o GROUP BY o.Channel ORDER BY o.Channel",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Channel",
+      "OrderCount"
+    ],
+    "rows": [
+      [
+        "InStore",
+        1641
+      ],
+      [
+        "Online",
+        1668
+      ],
+      [
+        "Phone",
+        1691
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"OrderCount\"],\"sql\":\"SELECT o.Channel, COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o GROUP BY o.Channel ORDER BY o.Channel\",\"explanation\":\"Order count grouped by sales channel.\"}"
+    ]
+  }
+}

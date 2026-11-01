@@ -1,0 +1,42 @@
+{
+  "id": "dim-top5-products-revenue",
+  "category": "dimension",
+  "metric": "TotalRevenue",
+  "question": "Which 5 products earn the most revenue?",
+  "referenceSql": "SELECT TOP 5 p.ProductName, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.ProductName ORDER BY SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) DESC, p.ProductName",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "ProductName",
+      "TotalRevenue"
+    ],
+    "rows": [
+      [
+        "Shoes 38",
+        112765.20
+      ],
+      [
+        "Furniture 02",
+        109622.51
+      ],
+      [
+        "Beverages 20",
+        108608.74
+      ],
+      [
+        "Fitness 49",
+        105415.61
+      ],
+      [
+        "Beverages 40",
+        102038.28
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"TotalRevenue\"],\"sql\":\"SELECT TOP 5 p.ProductName, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.ProductName ORDER BY SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) DESC, p.ProductName\",\"explanation\":\"Top five products by revenue.\"}"
+    ]
+  }
+}

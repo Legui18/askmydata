@@ -1,0 +1,24 @@
+{
+  "id": "metric-customer-count",
+  "category": "metric",
+  "metric": "CustomerCount",
+  "question": "How many customers have placed an order?",
+  "referenceSql": "SELECT COUNT(DISTINCT o.CustomerId) AS CustomerCount FROM dbo.Orders AS o",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "CustomerCount"
+    ],
+    "rows": [
+      [
+        200
+      ]
+    ],
+    "orderSensitive": false
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"CustomerCount\"],\"sql\":\"SELECT COUNT(DISTINCT o.CustomerId) AS CustomerCount FROM dbo.Orders AS o\",\"explanation\":\"Distinct customers who placed an order.\"}"
+    ]
+  }
+}

@@ -1,0 +1,34 @@
+{
+  "id": "dim-orders-by-status",
+  "category": "dimension",
+  "metric": "OrderCount",
+  "question": "Break down orders by status.",
+  "referenceSql": "SELECT o.Status, COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o GROUP BY o.Status ORDER BY o.Status",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Status",
+      "OrderCount"
+    ],
+    "rows": [
+      [
+        "Cancelled",
+        208
+      ],
+      [
+        "Completed",
+        4507
+      ],
+      [
+        "Shipped",
+        285
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"OrderCount\"],\"sql\":\"SELECT o.Status, COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o GROUP BY o.Status ORDER BY o.Status\",\"explanation\":\"Order count grouped by order status.\"}"
+    ]
+  }
+}

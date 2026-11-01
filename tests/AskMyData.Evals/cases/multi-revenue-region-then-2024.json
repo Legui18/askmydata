@@ -1,0 +1,44 @@
+{
+  "id": "multi-revenue-region-then-2024",
+  "category": "multi-turn",
+  "metric": "TotalRevenue",
+  "question": "Now only for 2024.",
+  "priorTurns": [
+    {
+      "question": "Show total revenue by region.",
+      "sql": "SELECT s.Region, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Stores AS s ON s.StoreId = o.StoreId GROUP BY s.Region ORDER BY s.Region"
+    }
+  ],
+  "referenceSql": "SELECT s.Region, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Stores AS s ON s.StoreId = o.StoreId JOIN dbo.Calendar AS cal ON cal.[Date] = o.OrderDate WHERE cal.[Year] = 2024 GROUP BY s.Region ORDER BY s.Region",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Region",
+      "TotalRevenue"
+    ],
+    "rows": [
+      [
+        "East",
+        699974.16
+      ],
+      [
+        "North",
+        476055.90
+      ],
+      [
+        "South",
+        235120.50
+      ],
+      [
+        "West",
+        423936.90
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"TotalRevenue\"],\"sql\":\"SELECT s.Region, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Stores AS s ON s.StoreId = o.StoreId JOIN dbo.Calendar AS cal ON cal.[Date] = o.OrderDate WHERE cal.[Year] = 2024 GROUP BY s.Region ORDER BY s.Region\",\"explanation\":\"Revenue by region restricted to 2024.\"}"
+    ]
+  }
+}

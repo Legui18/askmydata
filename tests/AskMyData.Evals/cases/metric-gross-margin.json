@@ -1,0 +1,24 @@
+{
+  "id": "metric-gross-margin",
+  "category": "metric",
+  "metric": "GrossMargin",
+  "question": "What is our gross margin?",
+  "referenceSql": "SELECT SUM(ol.Quantity * (ol.UnitPrice * (1 - ol.Discount) - ol.UnitCost)) AS GrossMargin FROM dbo.OrderLines AS ol",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "GrossMargin"
+    ],
+    "rows": [
+      [
+        1452128.80
+      ]
+    ],
+    "orderSensitive": false
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"GrossMargin\"],\"sql\":\"SELECT SUM(ol.Quantity * (ol.UnitPrice * (1 - ol.Discount) - ol.UnitCost)) AS GrossMargin FROM dbo.OrderLines AS ol\",\"explanation\":\"Net revenue minus cost of goods sold.\"}"
+    ]
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "id": "multi-category-then-highest",
+  "category": "multi-turn",
+  "metric": "TotalRevenue",
+  "question": "Which category is the highest?",
+  "priorTurns": [
+    {
+      "question": "What is revenue by product category?",
+      "sql": "SELECT p.Category, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.Category ORDER BY p.Category"
+    }
+  ],
+  "referenceSql": "SELECT TOP 1 p.Category, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.Category ORDER BY SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) DESC, p.Category",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Category",
+      "TotalRevenue"
+    ],
+    "rows": [
+      [
+        "Electronics",
+        810047.34
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"TotalRevenue\"],\"sql\":\"SELECT TOP 1 p.Category, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.Category ORDER BY SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) DESC, p.Category\",\"explanation\":\"Category with the highest revenue.\"}"
+    ]
+  }
+}

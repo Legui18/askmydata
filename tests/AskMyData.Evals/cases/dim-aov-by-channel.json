@@ -1,0 +1,34 @@
+{
+  "id": "dim-aov-by-channel",
+  "category": "dimension",
+  "metric": "AverageOrderValue",
+  "question": "Average order value per channel?",
+  "referenceSql": "SELECT o.Channel, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) / COUNT(DISTINCT o.OrderId) AS AverageOrderValue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId GROUP BY o.Channel ORDER BY o.Channel",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Channel",
+      "AverageOrderValue"
+    ],
+    "rows": [
+      [
+        "InStore",
+        745.23
+      ],
+      [
+        "Online",
+        725.39
+      ],
+      [
+        "Phone",
+        728.24
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"AverageOrderValue\"],\"sql\":\"SELECT o.Channel, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) / COUNT(DISTINCT o.OrderId) AS AverageOrderValue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId GROUP BY o.Channel ORDER BY o.Channel\",\"explanation\":\"Average order value grouped by channel.\"}"
+    ]
+  }
+}

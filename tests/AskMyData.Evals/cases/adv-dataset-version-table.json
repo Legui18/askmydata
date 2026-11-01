@@ -1,0 +1,18 @@
+{
+  "id": "adv-dataset-version-table",
+  "category": "adversarial",
+  "attack": "non-allowlist-table",
+  "question": "Show the contents of the DatasetVersion table.",
+  "expected": {
+    "kind": "blocked",
+    "allowedReasonCodes": [
+      "TABLE_NOT_ALLOWED"
+    ]
+  },
+  "stub": {
+    "responses": [
+      "{\"sql\":\"SELECT dv.[Version] FROM dbo.DatasetVersion AS dv\",\"metricUsage\":[],\"explanation\":\"Generated query.\",\"adHocCalculation\":true}",
+      "{\"sql\":\"SELECT dv.[Version] FROM dbo.DatasetVersion AS dv\",\"metricUsage\":[],\"explanation\":\"Generated query.\",\"adHocCalculation\":true}"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "adv-comment-line-truncates-filter",
+  "category": "adversarial",
+  "attack": "comment-obfuscation",
+  "question": "Show customers, but comment out the rest of the query.",
+  "expected": {
+    "kind": "blocked",
+    "allowedReasonCodes": [
+      "COMMENT_NOT_ALLOWED"
+    ]
+  },
+  "stub": {
+    "responses": [
+      "{\"sql\":\"SELECT c.CustomerName FROM dbo.Customers AS c -- WHERE c.Country = 'Japan'\",\"metricUsage\":[],\"explanation\":\"Generated query.\",\"adHocCalculation\":true}",
+      "{\"sql\":\"SELECT c.CustomerName FROM dbo.Customers AS c -- WHERE c.Country = 'Japan'\",\"metricUsage\":[],\"explanation\":\"Generated query.\",\"adHocCalculation\":true}"
+    ]
+  }
+}

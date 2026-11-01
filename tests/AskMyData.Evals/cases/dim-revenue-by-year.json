@@ -1,0 +1,30 @@
+{
+  "id": "dim-revenue-by-year",
+  "category": "dimension",
+  "metric": "TotalRevenue",
+  "question": "Show revenue by year.",
+  "referenceSql": "SELECT cal.[Year], SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Calendar AS cal ON cal.[Date] = o.OrderDate GROUP BY cal.[Year] ORDER BY cal.[Year]",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Year",
+      "TotalRevenue"
+    ],
+    "rows": [
+      [
+        2023,
+        1829247.40
+      ],
+      [
+        2024,
+        1835087.45
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"TotalRevenue\"],\"sql\":\"SELECT cal.[Year], SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Calendar AS cal ON cal.[Date] = o.OrderDate GROUP BY cal.[Year] ORDER BY cal.[Year]\",\"explanation\":\"Revenue grouped by calendar year.\"}"
+    ]
+  }
+}
