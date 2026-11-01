@@ -6,6 +6,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Content Update="stub\stub-scripts.json" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\AskMyData.Domain\AskMyData.Domain.csproj" />
     <ProjectReference Include="..\AskMyData.Application\AskMyData.Application.csproj" />
     <ProjectReference Include="..\AskMyData.Infrastructure\AskMyData.Infrastructure.csproj" />

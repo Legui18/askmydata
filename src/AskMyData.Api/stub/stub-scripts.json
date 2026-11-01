@@ -1,0 +1,18 @@
+{
+  "What was total revenue by region in 2024?": [
+    {
+      "sql": "SELECT s.Region AS Region, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Stores AS s ON s.StoreId = o.StoreId WHERE YEAR(o.OrderDate) = 2024 GROUP BY s.Region ORDER BY s.Region",
+      "metricUsage": ["TotalRevenue"],
+      "explanation": "Total revenue (TotalRevenue: net sales after line discounts) for orders placed in 2024, grouped by store region and ordered by region.",
+      "adHocCalculation": false
+    }
+  ],
+  "Only for the West region": [
+    {
+      "sql": "SELECT s.Region AS Region, SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) AS TotalRevenue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Stores AS s ON s.StoreId = o.StoreId WHERE YEAR(o.OrderDate) = 2024 AND s.Region = 'West' GROUP BY s.Region ORDER BY s.Region",
+      "metricUsage": ["TotalRevenue"],
+      "explanation": "Total revenue (TotalRevenue) for 2024 orders, narrowed to the West region.",
+      "adHocCalculation": false
+    }
+  ]
+}
