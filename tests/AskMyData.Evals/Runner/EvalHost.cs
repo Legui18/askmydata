@@ -32,7 +32,25 @@ public static class EvalHostFactory
     /// Composes the real Application and Infrastructure services for one Eval_Case in Stub_Mode (R6.6). The only
     /// ILlmClient is <see cref="StubLlmClient"/> fed with the case's in-memory script; no HttpClient is created.
     /// </summary>
-    public static Func<EvalCase, EvalHost> CreateStub(IQueryExecutor innerExecutor, TimeProvider time)
+    public static Func<EvalCase, EvalHost> CreateStub(IQueryExecutor innerExecutor, TimeProvider time) =>
+        Create(innerExecutor, time, evalCase =>
+        {
+            var script = new InMemoryStubScriptSource().Add(evalCase.Question, evalCase.Stub.Responses.ToArray());
+            return new StubLlmClient(script);
+        });
+
+    /// <summary>
+    /// Composes the same graph for Live_Mode (R6.13): every case uses the supplied real <see cref="ILlmClient"/>
+    /// (the Gemini adapter), reached only through the port.
+    /// </summary>
+    public static Func<EvalCase, EvalHost> CreateLive(IQueryExecutor innerExecutor, TimeProvider time, ILlmClient llm)
+    {
+        ArgumentNullException.ThrowIfNull(llm);
+        return Create(innerExecutor, time, _ => llm);
+    }
+
+    private static Func<EvalCase, EvalHost> Create(
+        IQueryExecutor innerExecutor, TimeProvider time, Func<EvalCase, ILlmClient> llmFactory)
     {
         ArgumentNullException.ThrowIfNull(innerExecutor);
         var semanticLayer = SemanticLayerCatalog.Create();
@@ -45,8 +63,7 @@ public static class EvalHostFactory
 
         return evalCase =>
         {
-            var script = new InMemoryStubScriptSource().Add(evalCase.Question, evalCase.Stub.Responses.ToArray());
-            var llm = new StubLlmClient(script);
+            var llm = llmFactory(evalCase);
             var store = new InMemoryConversationStore(Options.Create(new ConversationStoreOptions()), time);
             var executor = new CountingQueryExecutor(innerExecutor);
             var handler = new AskQuestionHandler(

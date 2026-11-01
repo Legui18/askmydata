@@ -14,7 +14,8 @@ public sealed class EvalRunner(
     EvalMode mode,
     IReadOnlyList<EvalCase> cases,
     Func<EvalCase, EvalHost> hostFactory,
-    TimeProvider time)
+    TimeProvider time,
+    LlmUsageRecorder? usageRecorder = null)
 {
     public const decimal StubPassThreshold = 100m;
 
@@ -44,8 +45,8 @@ public sealed class EvalRunner(
             isStub ? "stub" : "live",
             isStub ? AccuracyReport.StubLabel : AccuracyReport.LiveLabel,
             time.GetUtcNow(),
-            Model: null,
-            TokenUsage: null,
+            Model: isStub ? null : usageRecorder?.Model,
+            TokenUsage: isStub ? null : usageRecorder?.Usage,
             PassThreshold: isStub ? StubPassThreshold : null,
             totals,
             results);

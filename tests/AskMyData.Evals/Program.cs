@@ -1,15 +1,18 @@
 using AskMyData.Application.Execution;
+using AskMyData.Application.Llm;
 using AskMyData.Evals.Cases;
 using AskMyData.Evals.Reporting;
 using AskMyData.Evals.Runner;
 using AskMyData.Infrastructure.Execution;
+using AskMyData.Infrastructure.Llm;
 using Microsoft.Extensions.Logging.Abstractions;
 using Microsoft.Extensions.Options;
 
 // Eval_Suite console runner.
 //   dotnet run --project tests/AskMyData.Evals -- --mode stub --out artifacts/evals [--connection <cs>] [--cases <dir>]
-// Live_Mode is added in a later task (20.x); generate-expected is handled by GenerateExpectedCommand.
-const string Usage = "Usage: --mode stub --out <dir> [--connection <read-only connection string>] [--cases <dir>]";
+//   dotnet run --project tests/AskMyData.Evals -- --mode live --out artifacts/evals-live   (needs Llm__Gemini__ApiKey)
+// generate-expected is handled by GenerateExpectedCommand.
+const string Usage = "Usage: --mode stub|live --out <dir> [--connection <read-only connection string>] [--cases <dir>]";
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -43,10 +46,15 @@ if (options is null)
     return 2;
 }
 
-if (options.Mode != EvalMode.Stub)
+LlmOptions? llmOptions = null;
+if (options.Mode == EvalMode.Live)
 {
-    Console.Error.WriteLine("Live mode is not available yet.");
-    return 2;
+    llmOptions = LiveLlmFactory.LoadOptions(Environment.GetEnvironmentVariable);
+    if (llmOptions is null)
+    {
+        Console.Error.WriteLine("Live mode needs an API key: set Llm__Gemini__ApiKey (or GEMINI_API_KEY).");
+        return 2;
+    }
 }
 
 try
@@ -75,13 +83,38 @@ try
         Options.Create(new QueryExecutorOptions { ConnectionString = connectionString }),
         NullLogger<SqlServerQueryExecutor>.Instance,
         TimeProvider.System);
-    var runner = new EvalRunner(
-        options.Mode, cases, EvalHostFactory.CreateStub(executor, TimeProvider.System), TimeProvider.System);
+    using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(60) };
+    LlmUsageRecorder? recorder = null;
+    Func<EvalCase, EvalHost> hostFactory;
+    if (llmOptions is null)
+    {
+        hostFactory = EvalHostFactory.CreateStub(executor, TimeProvider.System);
+    }
+    else
+    {
+        // Live_Mode: the Gemini adapter is reached only through ILlmClient; the decorator records usage.
+        recorder = new LlmUsageRecorder(llmOptions.Gemini.Model);
+        ILlmClient llm = new RecordingLlmClient(LiveLlmFactory.CreateGemini(http, llmOptions), recorder);
+        hostFactory = EvalHostFactory.CreateLive(executor, TimeProvider.System, llm);
+    }
+
+    var runner = new EvalRunner(options.Mode, cases, hostFactory, TimeProvider.System, recorder);
 
     var report = await runner.RunAsync(cts.Token);
     await new ReportWriter().WriteAsync(report, options.OutDirectory, cts.Token);
 
     Console.WriteLine($"{report.Label}");
+    if (report.Model is not null)
+    {
+        Console.WriteLine($"Model: {report.Model}");
+    }
+
+    if (report.TokenUsage is not null)
+    {
+        Console.WriteLine(
+            $"Tokens: prompt {report.TokenUsage.PromptTokens}, completion {report.TokenUsage.CompletionTokens}, total {report.TokenUsage.TotalTokens}");
+    }
+
     Console.WriteLine($"Passed {report.Totals.Passed}/{report.Totals.Cases} ({report.Totals.PassPercentage}%). Reports in {options.OutDirectory}");
     foreach (var failed in report.Results.Where(r => !r.Passed))
     {
