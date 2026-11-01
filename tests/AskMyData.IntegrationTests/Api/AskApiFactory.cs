@@ -72,6 +72,9 @@ public sealed class AskApiFactory(string? connectionString, string provider = "S
     {
         builder.UseEnvironment("Development");
         builder.UseSetting("Llm:Provider", provider);
+        // Demo_Guard limits are covered by unit tests; disable them so Api tests never see 429.
+        builder.UseSetting("DemoGuard:PerIpPerMinute", "0");
+        builder.UseSetting("DemoGuard:DailyCap", "0");
         builder.UseSetting("ConnectionStrings:ReadOnly", connectionString ?? "Server=localhost;Database=AskMyData");
         builder.ConfigureServices(services =>
         {

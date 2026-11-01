@@ -1,3 +1,4 @@
+using AskMyData.Api.DemoGuard;
 using AskMyData.Api.Mapping;
 using AskMyData.Api.Middleware;
 using AskMyData.Api.Options;
@@ -17,6 +18,7 @@ using AskMyData.Infrastructure.Llm;
 using AskMyData.Infrastructure.Observability;
 using AskMyData.Infrastructure.Validation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 
@@ -57,6 +59,17 @@ services.AddSingleton<IValidateOptions<ConversationStoreOptions>, ConversationSt
 services.AddSingleton<IValidateOptions<QueryExecutorOptions>, QueryExecutorOptionsValidator>();
 
 services.AddSingleton(TimeProvider.System);
+
+// Demo_Guard (R13): non-negative limits are enforced at startup.
+services.AddOptions<DemoGuardOptions>()
+    .Bind(configuration.GetSection(DemoGuardOptions.SectionName))
+    .Validate(o => o.PerIpPerMinute >= 0, "DemoGuard:PerIpPerMinute must be zero or greater.")
+    .Validate(o => o.DailyCap >= 0, "DemoGuard:DailyCap must be zero or greater.")
+    .Validate(
+        o => (o.TrustedProxies ?? []).All(p => System.Net.IPAddress.TryParse(p, out _)),
+        "DemoGuard:TrustedProxies must contain only IP addresses.")
+    .ValidateOnStart();
+services.AddSingleton<DemoRateLimiter>();
 
 // Domain and Application services.
 services.AddSingleton(_ => SemanticLayerCatalog.Create());
@@ -120,6 +133,29 @@ app.UseExceptionHandler(errorApp => errorApp.Run(async context =>
     context.Response.ContentType = "application/problem+json";
     await context.Response.WriteAsJsonAsync(problem, (System.Text.Json.JsonSerializerOptions?)null, "application/problem+json");
 }));
+
+// X-Forwarded-For is trusted only from explicitly configured proxies (RD19).
+var trustedProxies = (configuration.GetSection($"{DemoGuardOptions.SectionName}:TrustedProxies").Get<string[]>() ?? [])
+    .Where(p => !string.IsNullOrWhiteSpace(p))
+    .ToArray();
+if (trustedProxies.Length > 0)
+{
+    var forwarded = new ForwardedHeadersOptions { ForwardedHeaders = ForwardedHeaders.XForwardedFor };
+    forwarded.KnownNetworks.Clear();
+    forwarded.KnownProxies.Clear();
+    foreach (var proxy in trustedProxies)
+    {
+        forwarded.KnownProxies.Add(System.Net.IPAddress.Parse(proxy));
+    }
+
+    app.UseForwardedHeaders(forwarded);
+}
+
+// Demo_Guard applies only to /api/ask, ahead of routing and the Orchestrator (R13.5).
+app.UseWhen(
+    ctx => ctx.Request.Path.StartsWithSegments("/api/ask", StringComparison.OrdinalIgnoreCase),
+    branch => branch.UseMiddleware<DemoGuardMiddleware>());
+
 app.UseRouting();
 app.MapControllers();
 
