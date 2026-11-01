@@ -29,6 +29,7 @@
     <ProjectReference Include="..\..\src\AskMyData.Application\AskMyData.Application.csproj" />
     <ProjectReference Include="..\..\src\AskMyData.Infrastructure\AskMyData.Infrastructure.csproj" />
     <ProjectReference Include="..\..\src\AskMyData.Api\AskMyData.Api.csproj" />
+    <ProjectReference Include="..\AskMyData.Evals\AskMyData.Evals.csproj" />
   </ItemGroup>
 
 </Project>
