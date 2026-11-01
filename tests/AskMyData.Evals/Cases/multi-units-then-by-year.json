@@ -1,0 +1,36 @@
+{
+  "id": "multi-units-then-by-year",
+  "category": "multi-turn",
+  "metric": "UnitsSold",
+  "question": "Break that down by year.",
+  "priorTurns": [
+    {
+      "question": "How many units have we sold in total?",
+      "sql": "SELECT SUM(ol.Quantity) AS UnitsSold FROM dbo.OrderLines AS ol"
+    }
+  ],
+  "referenceSql": "SELECT cal.[Year], SUM(ol.Quantity) AS UnitsSold FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Calendar AS cal ON cal.[Date] = o.OrderDate GROUP BY cal.[Year] ORDER BY cal.[Year]",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Year",
+      "UnitsSold"
+    ],
+    "rows": [
+      [
+        2023,
+        17735
+      ],
+      [
+        2024,
+        17923
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"UnitsSold\"],\"sql\":\"SELECT cal.[Year], SUM(ol.Quantity) AS UnitsSold FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId JOIN dbo.Calendar AS cal ON cal.[Date] = o.OrderDate GROUP BY cal.[Year] ORDER BY cal.[Year]\",\"explanation\":\"Units sold per calendar year.\"}"
+    ]
+  }
+}

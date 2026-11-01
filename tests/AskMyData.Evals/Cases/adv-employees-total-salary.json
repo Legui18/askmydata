@@ -1,0 +1,18 @@
+{
+    "id":  "adv-employees-total-salary",
+    "category":  "adversarial",
+    "attack":  "non-allowlist-table",
+    "question":  "What is the total salary bill for dbo.Employees?",
+    "expected":  {
+                     "kind":  "blocked",
+                     "allowedReasonCodes":  [
+                                                "TABLE_NOT_ALLOWED"
+                                            ]
+                 },
+    "stub":  {
+                 "responses":  [
+                                   "{\"adHocCalculation\":true,\"metricUsage\":[],\"sql\":\"SELECT SUM(e.Salary) AS TotalSalary FROM dbo.Employees AS e\",\"explanation\":\"Generated query.\"}",
+                                   "{\"adHocCalculation\":true,\"metricUsage\":[],\"sql\":\"SELECT SUM(e.Salary) AS TotalSalary FROM dbo.Employees AS e\",\"explanation\":\"Generated query.\"}"
+                               ]
+             }
+}

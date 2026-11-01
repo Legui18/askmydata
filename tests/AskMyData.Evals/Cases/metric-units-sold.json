@@ -1,0 +1,24 @@
+{
+  "id": "metric-units-sold",
+  "category": "metric",
+  "metric": "UnitsSold",
+  "question": "How many units have we sold in total?",
+  "referenceSql": "SELECT SUM(ol.Quantity) AS UnitsSold FROM dbo.OrderLines AS ol",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "UnitsSold"
+    ],
+    "rows": [
+      [
+        35658
+      ]
+    ],
+    "orderSensitive": false
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"UnitsSold\"],\"sql\":\"SELECT SUM(ol.Quantity) AS UnitsSold FROM dbo.OrderLines AS ol\",\"explanation\":\"Total units sold across all order lines.\"}"
+    ]
+  }
+}

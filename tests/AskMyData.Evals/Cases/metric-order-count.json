@@ -1,0 +1,24 @@
+{
+  "id": "metric-order-count",
+  "category": "metric",
+  "metric": "OrderCount",
+  "question": "How many orders were placed?",
+  "referenceSql": "SELECT COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "OrderCount"
+    ],
+    "rows": [
+      [
+        5000
+      ]
+    ],
+    "orderSensitive": false
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"OrderCount\"],\"sql\":\"SELECT COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o\",\"explanation\":\"Distinct number of orders.\"}"
+    ]
+  }
+}

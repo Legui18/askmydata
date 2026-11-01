@@ -1,0 +1,24 @@
+{
+  "id": "metric-average-order-value",
+  "category": "metric",
+  "metric": "AverageOrderValue",
+  "question": "What is the average order value?",
+  "referenceSql": "SELECT SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) / COUNT(DISTINCT o.OrderId) AS AverageOrderValue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "AverageOrderValue"
+    ],
+    "rows": [
+      [
+        732.87
+      ]
+    ],
+    "orderSensitive": false
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"AverageOrderValue\"],\"sql\":\"SELECT SUM(ol.Quantity * ol.UnitPrice * (1 - ol.Discount)) / COUNT(DISTINCT o.OrderId) AS AverageOrderValue FROM dbo.OrderLines AS ol JOIN dbo.Orders AS o ON o.OrderId = ol.OrderId\",\"explanation\":\"Net revenue divided by the number of distinct orders.\"}"
+    ]
+  }
+}

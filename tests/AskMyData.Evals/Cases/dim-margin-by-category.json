@@ -1,0 +1,42 @@
+{
+  "id": "dim-margin-by-category",
+  "category": "dimension",
+  "metric": "GrossMargin",
+  "question": "What is gross margin by category?",
+  "referenceSql": "SELECT p.Category, SUM(ol.Quantity * (ol.UnitPrice * (1 - ol.Discount) - ol.UnitCost)) AS GrossMargin FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.Category ORDER BY p.Category",
+  "expected": {
+    "kind": "rows",
+    "columns": [
+      "Category",
+      "GrossMargin"
+    ],
+    "rows": [
+      [
+        "Apparel",
+        322128.33
+      ],
+      [
+        "Electronics",
+        282398.81
+      ],
+      [
+        "Grocery",
+        259915.12
+      ],
+      [
+        "Home",
+        279509.57
+      ],
+      [
+        "Sports",
+        308176.97
+      ]
+    ],
+    "orderSensitive": true
+  },
+  "stub": {
+    "responses": [
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"GrossMargin\"],\"sql\":\"SELECT p.Category, SUM(ol.Quantity * (ol.UnitPrice * (1 - ol.Discount) - ol.UnitCost)) AS GrossMargin FROM dbo.OrderLines AS ol JOIN dbo.Products AS p ON p.ProductId = ol.ProductId GROUP BY p.Category ORDER BY p.Category\",\"explanation\":\"Gross margin grouped by product category.\"}"
+    ]
+  }
+}
