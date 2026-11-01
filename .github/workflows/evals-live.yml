@@ -1,0 +1,45 @@
+name: Evals (live)
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "0 3 * * *"
+
+permissions:
+  contents: read
+
+jobs:
+  live-evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore AskMyData.sln
+
+      - name: Build
+        run: dotnet build AskMyData.sln --no-restore -c Release -warnaserror
+
+      # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
+      - name: Run live-mode evals
+        continue-on-error: true
+        env:
+          Llm__Gemini__ApiKey: ${{ secrets.GEMINI_API_KEY }}
+        run: dotnet run --project tests/AskMyData.Evals -c Release -- --mode live --out artifacts/evals
+
+      - name: Upload accuracy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accuracy-report-live
+          path: artifacts/evals
