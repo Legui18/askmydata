@@ -25,7 +25,7 @@ public sealed class JsonAuditLog : IAuditLog
         ArgumentNullException.ThrowIfNull(record);
 
         _logger.LogInformation(
-            "{event} {CorrelationId} {ConversationId} {Question} {Sql} {ValidationOutcome} {ValidationReasonCode} {FailureReason} {LatencyMs}",
+            "{event} {CorrelationId} {ConversationId} {Question} {Sql} {ValidationOutcome} {ValidationReasonCode} {FailureReason} {LatencyMs} {PromptTokens} {CompletionTokens} {EstimatedCostUsd} {ExecutionMs} {RowCount} {RepairCallOccurred} {Provider} {Model}",
             "ask.completed",
             record.CorrelationId,
             record.ConversationId,
@@ -34,7 +34,15 @@ public sealed class JsonAuditLog : IAuditLog
             record.ValidationOutcome.ToString(),
             record.ValidationReasonCode,
             record.FailureReason,
-            record.LatencyMs);
+            record.LatencyMs,
+            record.PromptTokens,
+            record.CompletionTokens,
+            record.EstimatedCostUsd,
+            record.ExecutionMs,
+            record.RowCount,
+            record.RepairCallOccurred,
+            record.Provider,
+            record.Model);
     }
 
     /// <inheritdoc />

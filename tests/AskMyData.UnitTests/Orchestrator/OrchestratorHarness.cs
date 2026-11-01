@@ -3,6 +3,7 @@ using AskMyData.Application.Ask;
 using AskMyData.Application.Charts;
 using AskMyData.Application.Execution;
 using AskMyData.Application.Llm;
+using AskMyData.Application.Observability;
 using AskMyData.Application.Options;
 using AskMyData.Application.Prompting;
 using AskMyData.Domain.Semantic;
@@ -103,7 +104,8 @@ public sealed class OrchestratorHarness
     public static OrchestratorHarness Create(
         IReadOnlyList<LlmStep> llmScript,
         IReadOnlyList<ExecutorStep>? executorScript = null,
-        AskOptions? options = null)
+        AskOptions? options = null,
+        LlmPricingOptions? pricing = null)
     {
         options ??= new AskOptions();
         var time = new FakeTimeProvider();
@@ -124,7 +126,8 @@ public sealed class OrchestratorHarness
             new StructuredResponseParser(),
             new ChartSuggester(),
             Microsoft.Extensions.Options.Options.Create(options),
-            time);
+            time,
+            new CostCalculator(Microsoft.Extensions.Options.Options.Create(pricing ?? new LlmPricingOptions())));
         return new OrchestratorHarness(time, llm, executor, validator, audit, store, options, prompts, handler);
     }
 

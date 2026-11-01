@@ -81,6 +81,8 @@ services.AddSingleton<StructuredResponseParser>();
 services.AddSingleton<ChartSuggester>();
 services.AddSingleton<INonceSource, RandomNonceSource>();
 services.AddSingleton<PromptBuilder>();
+services.AddOptions<LlmPricingOptions>().Bind(configuration.GetSection(LlmPricingOptions.SectionName));
+services.AddSingleton<CostCalculator>();
 services.AddSingleton<AskQuestionHandler>();
 
 // Infrastructure adapters.

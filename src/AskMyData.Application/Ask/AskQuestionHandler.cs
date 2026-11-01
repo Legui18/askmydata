@@ -26,7 +26,8 @@ public sealed class AskQuestionHandler(
     StructuredResponseParser parser,
     ChartSuggester charts,
     IOptions<AskOptions> options,
-    TimeProvider time)
+    TimeProvider time,
+    CostCalculator? costs = null)
 {
     /// <summary>Warning added when the answer is not based on a governed Metric (R2.9).</summary>
     public const string AdHocWarning = "This calculation is not a governed Metric.";
@@ -148,7 +149,10 @@ public sealed class AskQuestionHandler(
                     return Finish(state, new AskLlmUnavailable(state.ConversationId, Usage(), false), LlmUnavailableReason);
                 }
 
-                usage.Add(response);
+                state.Model = response.ModelName;
+                usage.Add(
+                    response,
+                    costs?.Estimate(response.ModelName, response.PromptTokens, response.CompletionTokens) ?? 0m);
 
                 // Step 7: parse. A non-empty refusal ends the request (KD3).
                 var parsed = parser.TryParse(response.RawText);
@@ -161,6 +165,7 @@ public sealed class AskQuestionHandler(
                 {
                     if (canRepair)
                     {
+                        state.RepairCallOccurred = true;
                         repair = new RepairInfo(ReasonCodes.GenerationInvalid, null);
                         failingSql = null;
                         continue;
@@ -185,6 +190,7 @@ public sealed class AskQuestionHandler(
 
                     if (canRepair)
                     {
+                        state.RepairCallOccurred = true;
                         repair = new RepairInfo(reason, validation.MetricName);
                         failingSql = parsed.Sql;
                         continue;
@@ -205,6 +211,7 @@ public sealed class AskQuestionHandler(
                 var budget = new QueryBudget(remainingForSql < opts.CommandTimeout ? remainingForSql : opts.CommandTimeout);
 
                 OneOf<QueryResult, ExecutionError> executed;
+                var executionStart = time.GetTimestamp();
                 try
                 {
                     executed = await executor.ExecuteAsync(validated, budget, linked.Token).ConfigureAwait(false);
@@ -224,6 +231,8 @@ public sealed class AskQuestionHandler(
                     throw;
                 }
 
+                state.ExecutionMs += (long)time.GetElapsedTime(executionStart).TotalMilliseconds;
+
                 if (executed.TryGetSecond(out var error))
                 {
                     if (DeadlineReached())
@@ -233,6 +242,7 @@ public sealed class AskQuestionHandler(
 
                     if (canRepair)
                     {
+                        state.RepairCallOccurred = true;
                         repair = new RepairInfo(error.Category.ToWireString(), null);
                         failingSql = parsed.Sql;
                         continue;
@@ -274,6 +284,7 @@ public sealed class AskQuestionHandler(
         finally
         {
             // Step 12: exactly one audit record per request.
+            var finalUsage = Usage();
             audit.Write(new AuditRecord(
                 command.CorrelationId,
                 state.ConversationId,
@@ -282,7 +293,15 @@ public sealed class AskQuestionHandler(
                 state.ValidationOutcome,
                 state.ValidationReasonCode,
                 state.Succeeded ? null : state.FailureReason ?? UnhandledReason,
-                ElapsedMs()));
+                finalUsage.ElapsedMs,
+                finalUsage.PromptTokens,
+                finalUsage.CompletionTokens,
+                finalUsage.EstimatedCostUsd,
+                state.ExecutionMs,
+                state.Succeeded ? state.RowCount : 0,
+                state.RepairCallOccurred,
+                llm.ProviderName,
+                state.Model));
         }
     }
 
@@ -323,5 +342,11 @@ public sealed class AskQuestionHandler(
         public bool Succeeded { get; set; }
 
         public int RowCount { get; set; }
+
+        public long ExecutionMs { get; set; }
+
+        public bool RepairCallOccurred { get; set; }
+
+        public string Model { get; set; } = string.Empty;
     }
 }
