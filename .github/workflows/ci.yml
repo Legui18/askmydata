@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build-test-evals:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      DOTNET_NOLOGO: true
+      DOTNET_CLI_TELEMETRY_OPTOUT: true
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET 8
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Restore
+        run: dotnet restore AskMyData.sln
+
+      - name: Build
+        run: dotnet build AskMyData.sln --no-restore -c Release -warnaserror
+
+      - name: Unit tests
+        run: dotnet test tests/AskMyData.UnitTests --no-build -c Release
+
+      # Testcontainers uses the Docker daemon preinstalled on ubuntu-latest.
+      - name: Integration tests
+        run: dotnet test tests/AskMyData.IntegrationTests --no-build -c Release
+
+      - name: Verify generated eval expectations are up to date
+        run: dotnet run --project tests/AskMyData.Evals -c Release -- generate-expected --check
+
+      - name: Run stub-mode evals
+        run: dotnet run --project tests/AskMyData.Evals -c Release -- --mode stub --out artifacts/evals
+
+      - name: Upload accuracy report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: accuracy-report-stub
+          path: artifacts/evals
