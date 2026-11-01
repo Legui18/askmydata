@@ -11,7 +11,20 @@ public sealed class ScriptedLlmClient(IReadOnlyList<LlmStep> script, TimeProvide
 {
     private readonly List<LlmRequest> _requests = [];
     private readonly List<CancellationToken> _tokens = [];
+    private readonly List<DateTimeOffset> _starts = [];
     private readonly object _gate = new();
+
+    /// <summary>Fake-clock time at which each call started, in call order.</summary>
+    public IReadOnlyList<DateTimeOffset> StartTimes
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _starts.ToArray();
+            }
+        }
+    }
 
     public string ProviderName => "Scripted";
 
@@ -54,6 +67,7 @@ public sealed class ScriptedLlmClient(IReadOnlyList<LlmStep> script, TimeProvide
             step = script[Math.Min(_requests.Count, script.Count - 1)];
             _requests.Add(request);
             _tokens.Add(cancellationToken);
+            _starts.Add(time.GetUtcNow());
         }
 
         cancellationToken.ThrowIfCancellationRequested();

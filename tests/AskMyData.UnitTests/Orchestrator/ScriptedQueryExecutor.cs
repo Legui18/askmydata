@@ -12,7 +12,20 @@ public sealed class ScriptedQueryExecutor(IReadOnlyList<ExecutorStep> script, Ti
 {
     private readonly List<ValidatedSql> _executed = [];
     private readonly List<QueryBudget> _budgets = [];
+    private readonly List<DateTimeOffset> _starts = [];
     private readonly object _gate = new();
+
+    /// <summary>Fake-clock time at which each call started, in call order.</summary>
+    public IReadOnlyList<DateTimeOffset> StartTimes
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _starts.ToArray();
+            }
+        }
+    }
 
     public IReadOnlyList<ValidatedSql> Executed
     {
@@ -55,6 +68,7 @@ public sealed class ScriptedQueryExecutor(IReadOnlyList<ExecutorStep> script, Ti
             step = script[Math.Min(_executed.Count, script.Count - 1)];
             _executed.Add(sql);
             _budgets.Add(budget);
+            _starts.Add(time.GetUtcNow());
         }
 
         cancellationToken.ThrowIfCancellationRequested();
