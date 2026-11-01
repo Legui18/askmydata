@@ -1,4 +1,5 @@
 using AskMyData.Api.DemoGuard;
+using AskMyData.Api.Health;
 using AskMyData.Api.Mapping;
 using AskMyData.Api.Middleware;
 using AskMyData.Api.Options;
@@ -18,8 +19,10 @@ using AskMyData.Infrastructure.Llm;
 using AskMyData.Infrastructure.Observability;
 using AskMyData.Infrastructure.Validation;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Diagnostics.HealthChecks;
 using Microsoft.Extensions.Options;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -103,6 +106,8 @@ services.AddSingleton(_ =>
 services.AddSingleton<ILlmClient>(sp =>
     sp.GetRequiredService<LlmProviderRegistry>().Resolve(configuration["Llm:Provider"] ?? string.Empty, sp));
 
+services.AddHealthChecks().AddCheck<SqlServerHealthCheck>("sqlServer");
+
 // Api adapters.
 services.AddSingleton<OutcomeHttpMapper>();
 services.AddSingleton(sp => new ResponseLeakGuard(sp.GetRequiredService<PromptBuilder>().SystemPromptInstructionText));
@@ -158,6 +163,16 @@ app.UseWhen(
 
 app.UseRouting();
 app.MapControllers();
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    ResponseWriter = SqlServerHealthCheck.WriteResponseAsync,
+    ResultStatusCodes =
+    {
+        [HealthStatus.Healthy] = StatusCodes.Status200OK,
+        [HealthStatus.Degraded] = StatusCodes.Status503ServiceUnavailable,
+        [HealthStatus.Unhealthy] = StatusCodes.Status503ServiceUnavailable,
+    },
+});
 
 app.Run();
 
