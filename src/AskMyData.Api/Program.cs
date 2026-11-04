@@ -103,8 +103,17 @@ services.AddSingleton<IStubScriptSource>(_ =>
 
     return new FileStubScriptSource(path);
 });
+services.AddOptions<LlmOptions>().Bind(configuration.GetSection(LlmOptions.SectionName)).ValidateOnStart();
+services.AddSingleton<IValidateOptions<LlmOptions>, LlmOptionsValidator>();
+services.AddHttpClient<GeminiLlmClient>((sp, client) =>
+{
+    // BaseAddress is informational; the adapter builds absolute URIs from Llm:Gemini:BaseUrl.
+    client.BaseAddress = sp.GetRequiredService<IOptions<LlmOptions>>().Value.Gemini.BaseUrl;
+});
 services.AddSingleton(_ =>
-    new LlmProviderRegistry().Register(StubLlmClient.Name, sp => new StubLlmClient(sp.GetRequiredService<IStubScriptSource>())));
+    new LlmProviderRegistry()
+        .Register(StubLlmClient.Name, sp => new StubLlmClient(sp.GetRequiredService<IStubScriptSource>()))
+        .Register(GeminiLlmClient.Name, sp => sp.GetRequiredService<GeminiLlmClient>()));
 services.AddSingleton<ILlmClient>(sp =>
     sp.GetRequiredService<LlmProviderRegistry>().Resolve(configuration["Llm:Provider"] ?? string.Empty, sp));
 

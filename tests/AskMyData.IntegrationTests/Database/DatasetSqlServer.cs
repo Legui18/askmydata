@@ -43,6 +43,15 @@ public sealed class DatasetSqlServer : IAsyncLifetime
         return new ScriptRun(result.ExitCode ?? -1, result.Stdout + Environment.NewLine + result.Stderr);
     }
 
+    /// <summary>Connection string for the askmydata_reader Read_Only_User against the AskMyData database.</summary>
+    public string ReadOnlyConnectionString => new SqlConnectionStringBuilder(_container.GetConnectionString())
+    {
+        InitialCatalog = "AskMyData",
+        UserID = "askmydata_reader",
+        Password = ReadOnlyPassword,
+        TrustServerCertificate = true,
+    }.ConnectionString;
+
     /// <summary>Executes a statement against the given database as sa.</summary>
     public async Task ExecuteAsync(string database, string sql)
     {

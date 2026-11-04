@@ -1,6 +1,7 @@
 using AskMyData.Application.Options;
 using AskMyData.Infrastructure.Conversations;
 using AskMyData.Infrastructure.Execution;
+using AskMyData.Infrastructure.Llm;
 using Microsoft.Extensions.Options;
 
 namespace AskMyData.Api.Options;
@@ -31,6 +32,21 @@ public sealed class QueryExecutorOptionsValidator : IValidateOptions<QueryExecut
             failures.Add("ConnectionStrings:ReadOnly must be set to a non-empty value.");
         if (options.RowLimit < 1) failures.Add("Ask:RowLimit must be at least 1.");
         return failures.Count == 0 ? ValidateOptionsResult.Success : ValidateOptionsResult.Fail(failures);
+    }
+}
+
+/// <summary>Startup validation for <see cref="LlmOptions"/>; the API key is never echoed.</summary>
+public sealed class LlmOptionsValidator : IValidateOptions<LlmOptions>
+{
+    public ValidateOptionsResult Validate(string? name, LlmOptions options)
+    {
+        if (string.Equals(options.Provider, GeminiLlmClient.Name, StringComparison.OrdinalIgnoreCase)
+            && string.IsNullOrWhiteSpace(options.Gemini.ApiKey))
+        {
+            return ValidateOptionsResult.Fail("Llm:Gemini:ApiKey must be set to a non-empty value when Llm:Provider is Gemini.");
+        }
+
+        return ValidateOptionsResult.Success;
     }
 }
 

@@ -3,11 +3,20 @@ using AskMyData.Application.Observability;
 
 namespace AskMyData.UnitTests.Orchestrator;
 
+/// <summary>Full arguments of one <see cref="IAuditLog.LlmCallFailed"/> notification.</summary>
+public sealed record LlmFailureEntry(
+    string Provider,
+    LlmCallType CallType,
+    TimeSpan Elapsed,
+    string CorrelationId,
+    bool TimedOut);
+
 /// <summary>In-memory IAuditLog that captures every record and failure notification.</summary>
 public sealed class CapturingAuditLog : IAuditLog
 {
     private readonly List<AuditRecord> _records = [];
     private readonly List<(string Provider, LlmCallType CallType, bool TimedOut)> _llmFailures = [];
+    private readonly List<LlmFailureEntry> _llmFailureDetails = [];
     private readonly List<string> _validationFailures = [];
     private readonly object _gate = new();
 
@@ -57,6 +66,18 @@ public sealed class CapturingAuditLog : IAuditLog
         lock (_gate)
         {
             _llmFailures.Add((provider, callType, timedOut));
+            _llmFailureDetails.Add(new LlmFailureEntry(provider, callType, elapsed, correlationId, timedOut));
+        }
+    }
+
+    public IReadOnlyList<LlmFailureEntry> LlmFailureDetails
+    {
+        get
+        {
+            lock (_gate)
+            {
+                return _llmFailureDetails.ToArray();
+            }
         }
     }
 
