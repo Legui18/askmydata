@@ -10,9 +10,11 @@ using Microsoft.Extensions.Options;
 
 // Eval_Suite console runner.
 //   dotnet run --project tests/AskMyData.Evals -- --mode stub --out artifacts/evals [--connection <cs>] [--cases <dir>]
-//   dotnet run --project tests/AskMyData.Evals -- --mode live --out artifacts/evals-live   (needs Llm__Gemini__ApiKey)
+//   dotnet run --project tests/AskMyData.Evals -- --mode live --out artifacts/evals-live [--delay-ms <n>]   (needs Llm__Gemini__ApiKey)
+// --delay-ms pauses between cases (default: 0 in stub mode, 6000 in live mode) to respect provider rate limits.
 // generate-expected is handled by GenerateExpectedCommand.
-const string Usage = "Usage: --mode stub|live --out <dir> [--connection <read-only connection string>] [--cases <dir>]";
+const string Usage = "Usage: --mode stub|live --out <dir> [--connection <read-only connection string>] [--cases <dir>] [--delay-ms <n>]";
+const int DefaultLiveDelayMs = 6000;
 
 using var cts = new CancellationTokenSource();
 Console.CancelKeyPress += (_, e) =>
@@ -61,7 +63,7 @@ try
 {
     var root = DatasetContainer.FindRepositoryRoot();
     var casesDirectory = options.CasesDirectory
-        ?? Path.Combine(root ?? Directory.GetCurrentDirectory(), "tests", "AskMyData.Evals", "cases");
+        ?? Path.Combine(root ?? Directory.GetCurrentDirectory(), "tests", "AskMyData.Evals", "Cases");
     var cases = await EvalCaseLoader.LoadDirectoryAsync(casesDirectory, cts.Token);
 
     await using var container = new DatasetContainer();
@@ -98,7 +100,14 @@ try
         hostFactory = EvalHostFactory.CreateLive(executor, TimeProvider.System, llm);
     }
 
-    var runner = new EvalRunner(options.Mode, cases, hostFactory, TimeProvider.System, recorder);
+    var delayMs = options.DelayMs ?? (options.Mode == EvalMode.Live ? DefaultLiveDelayMs : 0);
+    var runner = new EvalRunner(
+        options.Mode, cases, hostFactory, TimeProvider.System, recorder, TimeSpan.FromMilliseconds(delayMs));
+
+    if (delayMs > 0)
+    {
+        Console.WriteLine($"Pausing {delayMs} ms between cases. This run can take several minutes.");
+    }
 
     var report = await runner.RunAsync(cts.Token);
     await new ReportWriter().WriteAsync(report, options.OutDirectory, cts.Token);
@@ -114,6 +123,12 @@ try
         Console.WriteLine(
             $"Tokens: prompt {report.TokenUsage.PromptTokens}, completion {report.TokenUsage.CompletionTokens}, total {report.TokenUsage.TotalTokens}");
     }
+
+    // Two separate numbers: accuracy on normal cases and safety on adversarial cases.
+    var normalResults = report.Results.Where(r => r.Category != EvalCategories.Adversarial).ToList();
+    var adversarialResults = report.Results.Where(r => r.Category == EvalCategories.Adversarial).ToList();
+    Console.WriteLine($"Accuracy (normal cases): {normalResults.Count(r => r.Passed)}/{normalResults.Count}");
+    Console.WriteLine($"Safety (adversarial cases): {adversarialResults.Count(r => r.Passed)}/{adversarialResults.Count}");
 
     Console.WriteLine($"Passed {report.Totals.Passed}/{report.Totals.Cases} ({report.Totals.PassPercentage}%). Reports in {options.OutDirectory}");
     foreach (var failed in report.Results.Where(r => !r.Passed))
@@ -140,6 +155,7 @@ static RunOptions? ParseArgs(string[] args)
     string? outDirectory = null;
     string? connection = null;
     string? cases = null;
+    int? delayMs = null;
 
     for (var i = 0; i < args.Length; i++)
     {
@@ -174,12 +190,20 @@ static RunOptions? ParseArgs(string[] args)
             case "--cases":
                 cases = value;
                 break;
+            case "--delay-ms":
+                if (!int.TryParse(value, out var parsedDelay) || parsedDelay < 0)
+                {
+                    return null;
+                }
+
+                delayMs = parsedDelay;
+                break;
             default:
                 return null;
         }
     }
 
-    return mode is null || outDirectory is null ? null : new RunOptions(mode.Value, outDirectory, connection, cases);
+    return mode is null || outDirectory is null ? null : new RunOptions(mode.Value, outDirectory, connection, cases, delayMs);
 }
 
-internal sealed record RunOptions(EvalMode Mode, string OutDirectory, string? Connection, string? CasesDirectory);
+internal sealed record RunOptions(EvalMode Mode, string OutDirectory, string? Connection, string? CasesDirectory, int? DelayMs);

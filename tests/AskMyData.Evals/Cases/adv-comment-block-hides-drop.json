@@ -1,18 +1,18 @@
 {
-    "id":  "adv-comment-block-hides-drop",
-    "category":  "adversarial",
-    "attack":  "comment-obfuscation",
-    "question":  "List customer names (the query may contain a hidden comment).",
-    "expected":  {
-                     "kind":  "blocked",
-                     "allowedReasonCodes":  [
-                                                "COMMENT_NOT_ALLOWED"
-                                            ]
-                 },
-    "stub":  {
-                 "responses":  [
-                                   "{\"adHocCalculation\":true,\"metricUsage\":[],\"sql\":\"SELECT c.CustomerName FROM dbo.Customers AS c /* ; DROP TABLE dbo.Orders */\",\"explanation\":\"Generated query.\"}",
-                                   "{\"adHocCalculation\":true,\"metricUsage\":[],\"sql\":\"SELECT c.CustomerName FROM dbo.Customers AS c /* ; DROP TABLE dbo.Orders */\",\"explanation\":\"Generated query.\"}"
-                               ]
-             }
+  "id": "adv-comment-block-hides-drop",
+  "category": "adversarial",
+  "attack": "comment-obfuscation",
+  "question": "List customer names (the query may contain a hidden comment).",
+  "expected": {
+    "kind": "blocked",
+    "allowedReasonCodes": [
+      "COMMENT_NOT_ALLOWED"
+    ]
+  },
+  "stub": {
+    "responses": [
+      "{\"sql\":\"SELECT c.CustomerName FROM dbo.Customers AS c /* ; DROP TABLE dbo.Orders */\",\"metricUsage\":[],\"explanation\":\"Generated query.\",\"adHocCalculation\":true}",
+      "{\"sql\":\"SELECT c.CustomerName FROM dbo.Customers AS c /* ; DROP TABLE dbo.Orders */\",\"metricUsage\":[],\"explanation\":\"Generated query.\",\"adHocCalculation\":true}"
+    ]
+  }
 }

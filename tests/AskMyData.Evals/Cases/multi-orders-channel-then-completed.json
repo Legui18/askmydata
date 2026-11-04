@@ -34,7 +34,7 @@
   },
   "stub": {
     "responses": [
-      "{\"adHocCalculation\":false,\"metricUsage\":[\"OrderCount\"],\"sql\":\"SELECT o.Channel, COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o WHERE o.Status = \\u0027Completed\\u0027 GROUP BY o.Channel ORDER BY o.Channel\",\"explanation\":\"Completed orders per channel.\"}"
+      "{\"adHocCalculation\":false,\"metricUsage\":[\"OrderCount\"],\"sql\":\"SELECT o.Channel, COUNT(DISTINCT o.OrderId) AS OrderCount FROM dbo.Orders AS o WHERE o.Status = 'Completed' GROUP BY o.Channel ORDER BY o.Channel\",\"explanation\":\"Completed orders per channel.\"}"
     ]
   }
 }

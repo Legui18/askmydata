@@ -43,7 +43,7 @@ public static class GenerateExpectedCommand
 
         var root = DatasetContainer.FindRepositoryRoot();
         var casesDirectory = cases
-            ?? Path.Combine(root ?? Directory.GetCurrentDirectory(), "tests", "AskMyData.Evals", "cases");
+            ?? Path.Combine(root ?? Directory.GetCurrentDirectory(), "tests", "AskMyData.Evals", "Cases");
 
         await using var container = new DatasetContainer();
         if (connection is null)

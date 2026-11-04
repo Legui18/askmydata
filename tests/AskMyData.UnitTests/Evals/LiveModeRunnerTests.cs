@@ -15,13 +15,17 @@ public class LiveModeRunnerTests
     private const string GeneratedJson =
         "{\"sql\":\"SELECT s.Region, s.StoreId AS TotalRevenue FROM dbo.Stores AS s\",\"metricUsage\":[],\"explanation\":\"e\",\"adHocCalculation\":true}";
 
+    // The case loader requires every stub response to be valid JSON, even though Live_Mode never reads it.
+    private const string UnusedStubResponse =
+        "{\\\"sql\\\":\\\"SELECT 1\\\",\\\"metricUsage\\\":[],\\\"explanation\\\":\\\"e\\\",\\\"adHocCalculation\\\":true}";
+
     private static EvalCase RowsCase(string id, string expectedRegion)
     {
         var json = $$"""
         {
           "id": "{{id}}", "category": "{{EvalCategories.Dimension}}", "question": "Revenue by region {{id}}?",
           "expected": { "kind": "rows", "columns": ["region", "TOTALREVENUE"], "rows": [["{{expectedRegion}}", 100], ["North", 50]], "orderSensitive": false },
-          "stub": { "responses": ["unused in live mode"] }
+          "stub": { "responses": ["{{UnusedStubResponse}}"] }
         }
         """;
         return EvalCaseLoader.Parse(json).Single();

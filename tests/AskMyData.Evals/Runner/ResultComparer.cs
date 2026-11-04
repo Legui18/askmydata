@@ -10,17 +10,40 @@ public static class ResultComparer
 {
     private const char Separator = '\u001f';
 
-    /// <summary>Returns <c>null</c> when the result matches, otherwise a short mismatch description.</summary>
-    public static string? Compare(EvalExpected expected, QueryResult actual)
+    /// <summary>
+    /// Returns <c>null</c> when the result matches, otherwise a short mismatch description.
+    /// <para>
+    /// With <paramref name="requireColumnNames"/> true (Stub_Mode) the column names must equal the expected ones.
+    /// With false (Live_Mode) columns are matched by position: any non-empty name is accepted, because a real
+    /// model may legitimately choose another alias (for example the Metric name). A column with no name at all
+    /// is still reported, since an unnamed column is a poor answer for a user.
+    /// </para>
+    /// </summary>
+    public static string? Compare(EvalExpected expected, QueryResult actual, bool requireColumnNames = true)
     {
         ArgumentNullException.ThrowIfNull(expected);
         ArgumentNullException.ThrowIfNull(actual);
 
         var actualColumns = actual.Columns.Select(c => c.Name).ToList();
-        if (actualColumns.Count != expected.Columns.Count
-            || !actualColumns.Zip(expected.Columns).All(p => string.Equals(p.First, p.Second, StringComparison.OrdinalIgnoreCase)))
+        if (requireColumnNames)
         {
-            return $"Columns differ: expected [{string.Join(", ", expected.Columns)}], actual [{string.Join(", ", actualColumns)}].";
+            if (actualColumns.Count != expected.Columns.Count
+                || !actualColumns.Zip(expected.Columns).All(p => string.Equals(p.First, p.Second, StringComparison.OrdinalIgnoreCase)))
+            {
+                return ColumnsDiffer(expected, actualColumns);
+            }
+        }
+        else
+        {
+            if (actualColumns.Count != expected.Columns.Count)
+            {
+                return ColumnsDiffer(expected, actualColumns);
+            }
+
+            if (actualColumns.Any(string.IsNullOrWhiteSpace))
+            {
+                return $"A result column has no name (missing alias): actual [{string.Join(", ", actualColumns)}].";
+            }
         }
 
         var expectedRows = expected.Rows.Select(r => Key(r.Select(Normalize))).ToList();
@@ -40,14 +63,20 @@ public static class ResultComparer
         {
             if (!string.Equals(expectedRows[i], actualRows[i], StringComparison.Ordinal))
             {
-                return $"Row {i} differs.";
+                return $"Row {i} differs. Expected: {Show(expectedRows[i])}; actual: {Show(actualRows[i])}.";
             }
         }
 
         return null;
     }
 
+    private static string ColumnsDiffer(EvalExpected expected, List<string> actualColumns) =>
+        $"Columns differ: expected [{string.Join(", ", expected.Columns)}], actual [{string.Join(", ", actualColumns)}].";
+
     private static string Key(IEnumerable<string> cells) => string.Join(Separator, cells);
+
+    /// <summary>Readable form of a row key for mismatch messages.</summary>
+    private static string Show(string key) => "[" + key.Replace(Separator.ToString(), " | ") + "]";
 
     private static string Normalize(JsonElement cell) => cell.ValueKind switch
     {

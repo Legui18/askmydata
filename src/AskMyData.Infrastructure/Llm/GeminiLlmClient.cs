@@ -1,3 +1,4 @@
+using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
 using System.Text.Json.Nodes;
@@ -10,12 +11,21 @@ namespace AskMyData.Infrastructure.Llm;
 /// <see cref="ILlmClient"/> adapter for the Gemini <c>generateContent</c> API with schema-constrained JSON
 /// output (R11.3, R11.4). The API key travels only in the <c>x-goog-api-key</c> header and is never logged
 /// or included in exception messages.
+/// <para>
+/// Transport retry: an HTTP 429 or 503 is retried once after a short wait (the Retry-After header when present).
+/// This is a transport detail inside the adapter and is not a Repair_Call. The wait honours the caller's
+/// cancellation token, so the Request_Deadline and LLM_Timeout still bound the whole call.
+/// </para>
 /// </summary>
-public sealed class GeminiLlmClient(HttpClient http, IOptions<LlmOptions> options) : ILlmClient
+public sealed class GeminiLlmClient(HttpClient http, IOptions<LlmOptions> options, TimeProvider? time = null) : ILlmClient
 {
     public const string Name = "Gemini";
 
     private const string ApiKeyHeader = "x-goog-api-key";
+    private const int MaxAttempts = 2;
+
+    private static readonly TimeSpan MinRetryWait = TimeSpan.FromSeconds(1);
+    private static readonly TimeSpan MaxRetryWait = TimeSpan.FromSeconds(20);
 
     private static readonly JsonNode ResponseSchema = JsonNode.Parse(
         """
@@ -60,24 +70,34 @@ public sealed class GeminiLlmClient(HttpClient http, IOptions<LlmOptions> option
         };
 
         var path = $"v1beta/models/{Uri.EscapeDataString(gemini.Model)}:generateContent";
-        using var message = new HttpRequestMessage(HttpMethod.Post, new Uri(gemini.BaseUrl, path))
-        {
-            Content = JsonContent.Create(body),
-        };
-        message.Headers.Add(ApiKeyHeader, gemini.ApiKey);
+        var requestUri = new Uri(gemini.BaseUrl, path);
 
         try
         {
-            using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
-            if (!response.IsSuccessStatusCode)
+            for (var attempt = 1; ; attempt++)
             {
+                // A request message cannot be sent twice, so build a fresh one for every attempt.
+                using var message = CreateMessage(requestUri, gemini.ApiKey, body);
+                using var response = await http.SendAsync(message, cancellationToken).ConfigureAwait(false);
+
+                if (response.IsSuccessStatusCode)
+                {
+                    await using var stream = await response.Content
+                        .ReadAsStreamAsync(cancellationToken).ConfigureAwait(false);
+                    using var document = await JsonDocument.ParseAsync(
+                        stream, cancellationToken: cancellationToken).ConfigureAwait(false);
+                    return Map(document.RootElement, gemini.Model);
+                }
+
+                if (attempt < MaxAttempts && IsRetryable(response.StatusCode))
+                {
+                    await Task.Delay(RetryDelay(response), time ?? TimeProvider.System, cancellationToken)
+                        .ConfigureAwait(false);
+                    continue;
+                }
+
                 throw Unavailable($"Gemini returned HTTP {(int)response.StatusCode}.");
             }
-
-            using var document = await JsonDocument.ParseAsync(
-                await response.Content.ReadAsStreamAsync(cancellationToken).ConfigureAwait(false),
-                cancellationToken: cancellationToken).ConfigureAwait(false);
-            return Map(document.RootElement, gemini.Model);
         }
         catch (HttpRequestException ex)
         {
@@ -92,6 +112,40 @@ public sealed class GeminiLlmClient(HttpClient http, IOptions<LlmOptions> option
             // HttpClient's own timeout, not the caller's token.
             throw Unavailable("Gemini request timed out.", ex);
         }
+    }
+
+    private static HttpRequestMessage CreateMessage(Uri requestUri, string apiKey, JsonObject body)
+    {
+        var message = new HttpRequestMessage(HttpMethod.Post, requestUri)
+        {
+            Content = JsonContent.Create(body),
+        };
+        message.Headers.Add(ApiKeyHeader, apiKey);
+        return message;
+    }
+
+    private static bool IsRetryable(HttpStatusCode status) =>
+        status is HttpStatusCode.TooManyRequests or HttpStatusCode.ServiceUnavailable;
+
+    /// <summary>Retry-After when the provider sends it; otherwise 15 s for 429 and 3 s for 503. Bounded to 1-20 s.</summary>
+    private static TimeSpan RetryDelay(HttpResponseMessage response)
+    {
+        var retryAfter = response.Headers.RetryAfter;
+        TimeSpan wait;
+        if (retryAfter?.Delta is { } delta)
+        {
+            wait = delta;
+        }
+        else if (retryAfter?.Date is { } date)
+        {
+            wait = date - DateTimeOffset.UtcNow;
+        }
+        else
+        {
+            wait = TimeSpan.FromSeconds(response.StatusCode == HttpStatusCode.TooManyRequests ? 15 : 3);
+        }
+
+        return wait < MinRetryWait ? MinRetryWait : wait > MaxRetryWait ? MaxRetryWait : wait;
     }
 
     private static LlmResponse Map(JsonElement root, string configuredModel)
