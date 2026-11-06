@@ -1,4 +1,4 @@
-namespace AskMyData.Infrastructure.Llm;
+﻿namespace AskMyData.Infrastructure.Llm;
 
 /// <summary>LLM provider configuration (section <c>Llm</c>, R11.1).</summary>
 public sealed class LlmOptions
@@ -16,9 +16,10 @@ public sealed class LlmOptions
 /// <summary>Settings for <see cref="GeminiLlmClient"/>. The API key comes from env/secret store and is never logged.</summary>
 public sealed class GeminiOptions
 {
-    public string Model { get; set; } = "gemini-2.5-flash";
+    public string Model { get; set; } = "gemini-3.5-flash-lite";
 
     public string ApiKey { get; set; } = "";
 
     public Uri BaseUrl { get; set; } = new("https://generativelanguage.googleapis.com/");
 }
+
