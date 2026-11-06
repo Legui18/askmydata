@@ -29,7 +29,13 @@ services:
       - ./db:/db:ro
     entrypoint: ["/bin/bash", "-c"]
     command:
-      - /opt/mssql-tools18/bin/sqlcmd -b -C -S sqlserver -U sa -P "$$SA_PASSWORD" -i /db/dataset.sql -v READONLY_PASSWORD="$$READONLY_PASSWORD"
+      - |
+        for i in $$(seq 1 30); do
+          /opt/mssql-tools18/bin/sqlcmd -b -C -S sqlserver -U sa -P "$$SA_PASSWORD" -i /db/dataset.sql -v READONLY_PASSWORD="$$READONLY_PASSWORD" && exit 0
+          echo "db-init: attempt $$i failed, retrying in 5s"
+          sleep 5
+        done
+        exit 1
     restart: "no"
 
   api:
@@ -46,6 +52,7 @@ services:
       ConnectionStrings__ReadOnly: "Server=sqlserver,1433;Database=AskMyData;User Id=askmydata_reader;Password=${READONLY_PASSWORD:?Set READONLY_PASSWORD in .env};TrustServerCertificate=True;Encrypt=True;ApplicationIntent=ReadOnly"
       Llm__Provider: ${LLM_PROVIDER:-Stub}
       Llm__Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Llm__Gemini__Model: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
 
 volumes:
   sqldata:
