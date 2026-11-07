@@ -1,9 +1,9 @@
-name: Evals (live)
+﻿name: Evals (live)
 
 on:
   workflow_dispatch:
-  schedule:
-    - cron: "0 3 * * *"
+#  schedule:
+#    - cron: "0 3 * * *"
 
 permissions:
   contents: read
