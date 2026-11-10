@@ -1,0 +1,19 @@
+﻿{
+  "$schema": "https://opencode.ai/config.json",
+  "provider": {
+    "nim": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "NIM directo",
+      "options": {
+        "baseURL": "https://integrate.api.nvidia.com/v1",
+        "apiKey": "{env:NVIDIA_API_KEY}"
+      },
+      "models": {
+        "nvidia/nemotron-3-ultra-550b-a55b": { "name": "Nemotron 3 Ultra 550B" },
+        "minimaxai/minimax-m3.1-flash": { "name": "MiniMax M3.1 Flash" },
+        "stepfun-ai/step-5-preview": { "name": "Step 5 Preview" },
+        "poolside/laguna-xs-2.1": { "name": "Laguna XS 2.1" }
+      }
+    }
+  }
+}
