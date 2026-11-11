@@ -10,3 +10,10 @@
 
 /* Chart.js controla el tamaño del canvas con responsive: true + maintainAspectRatio: false.
    NO forzar width/height en el canvas: causa bucle infinito de resize/render. */
+
+@media (max-width: 600px) {
+  .chart-container {
+    height: 260px;
+    padding: 0.5rem;
+  }
+}
