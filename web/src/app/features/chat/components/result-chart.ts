@@ -298,8 +298,10 @@ export class ResultChartComponent implements OnDestroy {
   }
 
   private formatNumber(value: number): string {
+    const abs = Math.abs(value);
+    const maxDecimals = abs !== 0 && abs < 1 ? 4 : 2;
     return new Intl.NumberFormat(undefined, {
-      maximumFractionDigits: 2,
+      maximumFractionDigits: maxDecimals,
       useGrouping: true,
     }).format(value);
   }

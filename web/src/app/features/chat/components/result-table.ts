@@ -32,12 +32,18 @@ export class ResultTableComponent {
   formatCell(cell: unknown, col: Column): string {
     if (cell === null || cell === undefined) return '';
     if (this.isNumericColumn(col) && typeof cell === 'number') {
-      return new Intl.NumberFormat(undefined, {
-        maximumFractionDigits: 2,
-        useGrouping: true,
-      }).format(cell);
+      return this.formatNumber(cell);
     }
     return String(cell);
+  }
+
+  private formatNumber(value: number): string {
+    const abs = Math.abs(value);
+    const maxDecimals = abs !== 0 && abs < 1 ? 4 : 2;
+    return new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: maxDecimals,
+      useGrouping: true,
+    }).format(value);
   }
 
   getCellAlign(col: Column): 'right' | 'left' {
