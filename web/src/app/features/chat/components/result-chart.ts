@@ -33,8 +33,16 @@ export class ResultChartComponent implements OnDestroy {
   private themeMediaQuery: MediaQueryList | null = null;
   private themeListener: ((event: MediaQueryListEvent) => void) | null = null;
 
+  // Paleta sobria: azul, verde, violeta, ámbar, naranja (para eje derecho)
+  private readonly palette = [
+    { rgb: '59, 130, 246', hex: '#3b82f6' },    // azul
+    { rgb: '16, 185, 129', hex: '#10b981' },    // verde
+    { rgb: '139, 92, 246', hex: '#8b5cf6' },    // violeta
+    { rgb: '245, 158, 11', hex: '#f59e0b' },    // ámbar
+  ];
+  private readonly rightAxisColor = { rgb: '234, 88, 12', hex: '#ea580c' }; // naranja
+
   constructor() {
-    // afterNextRender para asegurar que el canvas existe en el primer render si shouldShowChart ya es true
     afterNextRender(() => {
       const canvasEl = this.canvasRef();
       if (canvasEl && this.shouldShowChart() && !this.hasRendered) {
@@ -48,7 +56,6 @@ export class ResultChartComponent implements OnDestroy {
       }
     });
 
-    // Escuchar cambios de tema (prefers-color-scheme)
     if (typeof window !== 'undefined' && window.matchMedia) {
       this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
       this.themeListener = () => this.onThemeChange();
@@ -166,32 +173,30 @@ export class ResultChartComponent implements OnDestroy {
 
     // Colores del tema actual
     const theme = this.getThemeColors();
-    const accentBlue = '59, 130, 246'; // #3b82f6
-    const accentRight = '234, 88, 12'; // #ea580c
 
-    const datasets = yIndices.map((yIndex: number, idx: number) => {
+    // Determinar qué series van al eje derecho
+    const seriesInfo = yIndices.map((yIndex: number, idx: number) => {
       const col = cols[yIndex];
       const values = rows.map((r) => Number(r[yIndex] ?? 0));
       const isRightAxis = this.shouldUseRightAxis(values, yIndices[0], rows, col.name);
+      return { yIndex, col, values, isRightAxis, idx };
+    });
 
-      // Barra: relleno azul 0.6, borde azul sólido
-      const rgb = isRightAxis ? accentRight : accentBlue;
+    const hasRightAxis = seriesInfo.some(s => s.isRightAxis);
+
+    const datasets = seriesInfo.map(({ yIndex, col, values, isRightAxis, idx }) => {
+      // Elegir color: naranja si va al eje derecho, sino siguiente de la paleta
+      const color = isRightAxis ? this.rightAxisColor : this.palette[idx % this.palette.length];
       return {
         label: col.name,
         data: values,
-        borderColor: `rgb(${rgb})`,
-        backgroundColor: `rgba(${rgb}, 0.6)`,
+        borderColor: color.hex,
+        backgroundColor: `${color.hex}99`, // 60% opacity (0.6 * 255 ≈ 153 = 0x99)
         borderWidth: 2,
         yAxisID: isRightAxis ? 'y1' : 'y',
         fill: suggestion.type === 'line' ? false : undefined,
         tension: suggestion.type === 'line' ? 0.3 : undefined,
       };
-    });
-
-    const hasRightAxis = yIndices.some((yIndex, idx) => {
-      const col = cols[yIndex];
-      const values = rows.map((r) => Number(r[yIndex] ?? 0));
-      return this.shouldUseRightAxis(values, yIndices[0], rows, col.name);
     });
 
     const scales: NonNullable<ChartConfiguration['options']>['scales'] = {
@@ -219,7 +224,7 @@ export class ResultChartComponent implements OnDestroy {
         position: 'right',
         grid: { drawOnChartArea: false },
         ticks: {
-          color: theme.textMuted,
+          color: this.rightAxisColor.hex, // naranja para textos del eje derecho
           font: { family: 'var(--font-sans)' },
           callback: (value: number | string) => this.formatNumber(value as number),
         },
