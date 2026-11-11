@@ -24,9 +24,18 @@ export class ResultTableComponent {
     'number'
   ]);
 
+  private readonly dateTypes = new Set([
+    'date', 'datetime', 'datetime2', 'smalldatetime', 'timestamp'
+  ]);
+
   isNumericColumn(col: Column): boolean {
     const type = col.type.toLowerCase();
     return this.numericTypes.has(type);
+  }
+
+  isDateColumn(col: Column): boolean {
+    const type = col.type.toLowerCase();
+    return this.dateTypes.has(type);
   }
 
   formatCell(cell: unknown, col: Column): string {
@@ -34,7 +43,17 @@ export class ResultTableComponent {
     if (this.isNumericColumn(col) && typeof cell === 'number') {
       return this.formatNumber(cell);
     }
+    if (this.isDateColumn(col) && typeof cell === 'string') {
+      return this.formatDateForDisplay(cell);
+    }
     return String(cell);
+  }
+
+  /** Formatea fecha: si es "YYYY-MM-DDT00:00:00" -> "YYYY-MM-DD", si no deja completa */
+  private formatDateForDisplay(value: string): string {
+    const match = value.match(/^(\d{4}-\d{2}-\d{2})T00:00:00/);
+    if (match) return match[1];
+    return value;
   }
 
   private formatNumber(value: number): string {

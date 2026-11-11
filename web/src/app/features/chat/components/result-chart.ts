@@ -68,16 +68,13 @@ export class ResultChartComponent implements OnDestroy {
       const cols = this.columns();
       const data = this.rows();
 
-      const shouldRender =
-        suggestion &&
-        (suggestion.type === 'bar' || suggestion.type === 'line') &&
-        cols.length > 0 &&
-        data.length >= 2 &&
-        (suggestion !== this.prevSuggestion ||
-          cols !== this.prevColumns ||
-          data !== this.prevRows);
+      // Criterios para no dibujar gráfico:
+      // - >60 filas en barras, >400 en líneas
+      // - TODAS las yColumns son identificadores (Id, *Id, int+id)
+      // - Si solo algunas son identificadores, se filtran y se dibuja el resto
+      const shouldRender = this.shouldRenderChart(suggestion, cols, data);
 
-      if (shouldRender) {
+      if (shouldRender && suggestion) {
         this.prevSuggestion = suggestion;
         this.prevColumns = cols;
         this.prevRows = data;
@@ -125,6 +122,83 @@ export class ResultChartComponent implements OnDestroy {
     }
   }
 
+  /** Decide si se debe dibujar el gráfico según filas y tipo de columnas */
+  private shouldRenderChart(
+    suggestion: ChartSuggestion | null,
+    cols: Column[],
+    data: unknown[][]
+  ): boolean {
+    if (!suggestion || suggestion.type === 'table-only' || cols.length === 0 || data.length < 2) {
+      return false;
+    }
+
+    // Límite de filas: 60 para barras, 400 para líneas
+    const maxRows = suggestion.type === 'bar' ? 60 : 400;
+    if (data.length > maxRows) {
+      return false;
+    }
+
+    // Filtrar yColumns: quitar identificadores
+    const validYColumns = this.filterIdentifierColumns(suggestion.yColumns, cols);
+
+    // Si TODAS son identificadores, no dibujar
+    if (validYColumns.length === 0) {
+      return false;
+    }
+
+    // Verificar que xColumn exista
+    const xIndex = cols.findIndex((c) => c.name === suggestion.xColumn);
+    if (xIndex === -1) {
+      return false;
+    }
+
+    // Verificar si cambió algo relevante
+    return (
+      suggestion !== this.prevSuggestion ||
+      cols !== this.prevColumns ||
+      data !== this.prevRows
+    );
+  }
+
+  /**
+   * Detecta columnas identificadoras:
+   * - nombre es "Id" o termina en "Id" (OrderId, CustomerId, StoreId)
+   * - tipo es "int" (o variantes) Y nombre contiene "id" (case-insensitive)
+   */
+  private isIdentifierColumn(col: Column): boolean {
+    const name = col.name;
+    const type = col.type.toLowerCase();
+
+    // Exactamente "Id" o termina en "Id"
+    if (name === 'Id' || name.endsWith('Id')) {
+      return true;
+    }
+
+    // Tipo entero y nombre contiene "id"
+    const intTypes = new Set(['int', 'integer', 'bigint', 'smallint', 'tinyint']);
+    if (intTypes.has(type) && name.toLowerCase().includes('id')) {
+      return true;
+    }
+
+    return false;
+  }
+
+  private filterIdentifierColumns(yColumns: string[], cols: Column[]): string[] {
+    return yColumns.filter((name) => {
+      const col = cols.find((c) => c.name === name);
+      return col && !this.isIdentifierColumn(col);
+    });
+  }
+
+  /** Formatea fecha: si es "YYYY-MM-DDT00:00:00" -> "YYYY-MM-DD", si no deja completa */
+  private formatDateForDisplay(value: unknown): string {
+    if (typeof value !== 'string') return String(value ?? '');
+    // ISO datetime con hora medianoche
+    const match = value.match(/^(\d{4}-\d{2}-\d{2})T00:00:00/);
+    if (match) return match[1];
+    return value;
+  }
+
   /** Lee las variables CSS actuales y devuelve un objeto con los colores resueltos */
   private getThemeColors(): {
     textSecondary: string;
@@ -160,7 +234,8 @@ export class ResultChartComponent implements OnDestroy {
       return;
     }
 
-    const yIndices = suggestion.yColumns
+    // Filtrar yColumns quitando identificadores
+    const yIndices = this.filterIdentifierColumns(suggestion.yColumns, cols)
       .map((name: string) => cols.findIndex((c) => c.name === name))
       .filter((i: number) => i !== -1);
 
@@ -169,7 +244,8 @@ export class ResultChartComponent implements OnDestroy {
       return;
     }
 
-    const xValues = rows.map((r) => r[xIndex] ?? '');
+    // Formatear valores del eje X (fechas)
+    const xValues = rows.map((r) => this.formatDateForDisplay(r[xIndex] ?? ''));
 
     // Colores del tema actual
     const theme = this.getThemeColors();
@@ -185,13 +261,12 @@ export class ResultChartComponent implements OnDestroy {
     const hasRightAxis = seriesInfo.some(s => s.isRightAxis);
 
     const datasets = seriesInfo.map(({ yIndex, col, values, isRightAxis, idx }) => {
-      // Elegir color: naranja si va al eje derecho, sino siguiente de la paleta
       const color = isRightAxis ? this.rightAxisColor : this.palette[idx % this.palette.length];
       return {
         label: col.name,
         data: values,
         borderColor: color.hex,
-        backgroundColor: `${color.hex}99`, // 60% opacity (0.6 * 255 ≈ 153 = 0x99)
+        backgroundColor: `${color.hex}99`, // 60% opacity
         borderWidth: 2,
         yAxisID: isRightAxis ? 'y1' : 'y',
         fill: suggestion.type === 'line' ? false : undefined,
@@ -224,7 +299,7 @@ export class ResultChartComponent implements OnDestroy {
         position: 'right',
         grid: { drawOnChartArea: false },
         ticks: {
-          color: this.rightAxisColor.hex, // naranja para textos del eje derecho
+          color: this.rightAxisColor.hex,
           font: { family: 'var(--font-sans)' },
           callback: (value: number | string) => this.formatNumber(value as number),
         },
@@ -252,6 +327,12 @@ export class ResultChartComponent implements OnDestroy {
             borderWidth: 1,
             padding: 12,
             callbacks: {
+              // Formatear label del tooltip (eje X) si es fecha
+              title: (items) => {
+                const item = items[0];
+                if (item) return this.formatDateForDisplay(item.label);
+                return '';
+              },
               label: (context) => {
                 const label = context.dataset.label || '';
                 const value = context.parsed.y as number;
