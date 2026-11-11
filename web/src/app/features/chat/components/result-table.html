@@ -3,15 +3,15 @@
     <thead>
       <tr>
         @for (col of columns(); track col.name) {
-          <th>{{ col.name }} <span class="type-badge">{{ col.type }}</span></th>
+          <th [style.text-align]="getCellAlign(col)">{{ col.name }} <span class="type-badge">{{ col.type }}</span></th>
         }
       </tr>
     </thead>
     <tbody>
       @for (row of rows(); track $index) {
         <tr>
-          @for (cell of row; track $index) {
-            <td>{{ cell }}</td>
+          @for (cell of row; track $index; let colIdx = $index) {
+            <td [style.text-align]="getCellAlign(columns()[colIdx])">{{ formatCell(cell, columns()[colIdx]) }}</td>
           }
         </tr>
       } @empty {

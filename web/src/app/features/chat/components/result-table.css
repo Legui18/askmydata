@@ -15,7 +15,6 @@
 .result-table th,
 .result-table td {
   padding: 0.75rem 1rem;
-  text-align: left;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -57,4 +56,10 @@
   font-size: 0.8rem;
   color: var(--text-muted);
   font-style: italic;
+}
+
+/* Ensure numeric columns align right */
+.result-table td[style*="right"],
+.result-table th[style*="right"] {
+  text-align: right;
 }

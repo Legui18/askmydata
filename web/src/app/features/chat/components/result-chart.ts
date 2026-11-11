@@ -1,4 +1,4 @@
-import { Component, input, viewChild, ElementRef, effect, OnDestroy, signal } from '@angular/core';
+import { Component, input, viewChild, ElementRef, effect, OnDestroy, signal, afterNextRender } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
 import { ChartSuggestion } from '../../../core/api/models';
@@ -22,26 +22,50 @@ export class ResultChartComponent implements OnDestroy {
   rows = input.required<unknown[][]>();
   chartSuggestion = input<ChartSuggestion | null>(null);
 
-  canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('chartCanvas');
+  canvasRef = viewChild<ElementRef<HTMLCanvasElement>>('chartCanvas');
   chart = signal<Chart | null>(null);
+  shouldShowChart = signal(false);
 
-  // Referencias previas para detectar cambios reales (no solo nueva emisión de signal)
   private prevSuggestion: ChartSuggestion | null = null;
   private prevColumns: Column[] | null = null;
   private prevRows: unknown[][] | null = null;
+  private hasRendered = false;
+  private themeMediaQuery: MediaQueryList | null = null;
+  private themeListener: ((event: MediaQueryListEvent) => void) | null = null;
 
   constructor() {
+    // afterNextRender para asegurar que el canvas existe en el primer render si shouldShowChart ya es true
+    afterNextRender(() => {
+      const canvasEl = this.canvasRef();
+      if (canvasEl && this.shouldShowChart() && !this.hasRendered) {
+        const suggestion = this.chartSuggestion();
+        const cols = this.columns();
+        const data = this.rows();
+        if (suggestion && cols.length > 0 && data.length >= 2) {
+          this.renderChart(suggestion, cols, data);
+          this.hasRendered = true;
+        }
+      }
+    });
+
+    // Escuchar cambios de tema (prefers-color-scheme)
+    if (typeof window !== 'undefined' && window.matchMedia) {
+      this.themeMediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      this.themeListener = () => this.onThemeChange();
+      this.themeMediaQuery.addEventListener('change', this.themeListener);
+    }
+
     effect(() => {
+      const canvasEl = this.canvasRef();
       const suggestion = this.chartSuggestion();
       const cols = this.columns();
       const data = this.rows();
 
-      // Solo re-renderizar si hay datos válidos Y cambió algo relevante (por referencia)
       const shouldRender =
         suggestion &&
-        suggestion.type !== 'table-only' &&
+        (suggestion.type === 'bar' || suggestion.type === 'line') &&
         cols.length > 0 &&
-        data.length > 0 &&
+        data.length >= 2 &&
         (suggestion !== this.prevSuggestion ||
           cols !== this.prevColumns ||
           data !== this.prevRows);
@@ -50,12 +74,18 @@ export class ResultChartComponent implements OnDestroy {
         this.prevSuggestion = suggestion;
         this.prevColumns = cols;
         this.prevRows = data;
-        this.renderChart(suggestion, cols, data);
-      } else if (!suggestion || suggestion.type === 'table-only' || cols.length === 0 || data.length === 0) {
-        // Limpiar referencias previas si ya no hay datos válidos
+        this.shouldShowChart.set(true);
+
+        if (canvasEl) {
+          this.renderChart(suggestion, cols, data);
+          this.hasRendered = true;
+        }
+      } else if (!suggestion || suggestion.type === 'table-only' || cols.length === 0 || data.length < 2) {
         this.prevSuggestion = null;
         this.prevColumns = null;
         this.prevRows = null;
+        this.shouldShowChart.set(false);
+        this.hasRendered = false;
         this.destroyChart();
       }
     });
@@ -63,6 +93,21 @@ export class ResultChartComponent implements OnDestroy {
 
   ngOnDestroy(): void {
     this.destroyChart();
+    if (this.themeMediaQuery && this.themeListener) {
+      this.themeMediaQuery.removeEventListener('change', this.themeListener);
+      this.themeMediaQuery = null;
+      this.themeListener = null;
+    }
+  }
+
+  private onThemeChange(): void {
+    const canvasEl = this.canvasRef();
+    const suggestion = this.chartSuggestion();
+    const cols = this.columns();
+    const data = this.rows();
+    if (canvasEl && suggestion && cols.length > 0 && data.length >= 2) {
+      this.renderChart(suggestion, cols, data);
+    }
   }
 
   private destroyChart(): void {
@@ -73,39 +118,113 @@ export class ResultChartComponent implements OnDestroy {
     }
   }
 
+  /** Lee las variables CSS actuales y devuelve un objeto con los colores resueltos */
+  private getThemeColors(): {
+    textSecondary: string;
+    textMuted: string;
+    borderColor: string;
+    surfaceColor: string;
+    textPrimary: string;
+  } {
+    const root = document.documentElement;
+    const style = getComputedStyle(root);
+    return {
+      textSecondary: style.getPropertyValue('--text-secondary').trim() || '#525252',
+      textMuted: style.getPropertyValue('--text-muted').trim() || '#a3a3a3',
+      borderColor: style.getPropertyValue('--border-color').trim() || '#e5e5e5',
+      surfaceColor: style.getPropertyValue('--surface-color').trim() || '#ffffff',
+      textPrimary: style.getPropertyValue('--text-primary').trim() || '#171717',
+    };
+  }
+
   private renderChart(suggestion: ChartSuggestion, cols: Column[], rows: unknown[][]): void {
+    const canvasEl = this.canvasRef();
+    if (!canvasEl) return;
+
     this.destroyChart();
 
-    const canvas = this.canvasRef().nativeElement;
+    const canvas = canvasEl.nativeElement;
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
     const xIndex = cols.findIndex((c) => c.name === suggestion.xColumn);
-    if (xIndex === -1) return;
+    if (xIndex === -1) {
+      this.shouldShowChart.set(false);
+      return;
+    }
 
     const yIndices = suggestion.yColumns
       .map((name: string) => cols.findIndex((c) => c.name === name))
       .filter((i: number) => i !== -1);
 
-    if (yIndices.length === 0) return;
+    if (yIndices.length === 0) {
+      this.shouldShowChart.set(false);
+      return;
+    }
 
     const xValues = rows.map((r) => r[xIndex] ?? '');
 
+    // Colores del tema actual
+    const theme = this.getThemeColors();
+    const accentBlue = '59, 130, 246'; // #3b82f6
+    const accentRight = '234, 88, 12'; // #ea580c
+
     const datasets = yIndices.map((yIndex: number, idx: number) => {
       const col = cols[yIndex];
-      const values = rows.map((r) => (r[yIndex] as number) ?? 0);
+      const values = rows.map((r) => Number(r[yIndex] ?? 0));
       const isRightAxis = this.shouldUseRightAxis(values, yIndices[0], rows, col.name);
 
+      // Barra: relleno azul 0.6, borde azul sólido
+      const rgb = isRightAxis ? accentRight : accentBlue;
       return {
         label: col.name,
         data: values,
-        borderColor: this.getColor(idx, isRightAxis),
-        backgroundColor: this.getColor(idx, isRightAxis, true),
+        borderColor: `rgb(${rgb})`,
+        backgroundColor: `rgba(${rgb}, 0.6)`,
+        borderWidth: 2,
         yAxisID: isRightAxis ? 'y1' : 'y',
         fill: suggestion.type === 'line' ? false : undefined,
         tension: suggestion.type === 'line' ? 0.3 : undefined,
       };
     });
+
+    const hasRightAxis = yIndices.some((yIndex, idx) => {
+      const col = cols[yIndex];
+      const values = rows.map((r) => Number(r[yIndex] ?? 0));
+      return this.shouldUseRightAxis(values, yIndices[0], rows, col.name);
+    });
+
+    const scales: NonNullable<ChartConfiguration['options']>['scales'] = {
+      x: {
+        grid: { display: false },
+        ticks: { color: theme.textMuted, font: { family: 'var(--font-sans)' } },
+      },
+      y: {
+        type: 'linear',
+        display: true,
+        position: 'left',
+        grid: { color: theme.borderColor },
+        ticks: {
+          color: theme.textMuted,
+          font: { family: 'var(--font-sans)' },
+          callback: (value: number | string) => this.formatNumber(value as number),
+        },
+      },
+    };
+
+    if (hasRightAxis) {
+      scales['y1'] = {
+        type: 'linear',
+        display: true,
+        position: 'right',
+        grid: { drawOnChartArea: false },
+        ticks: {
+          color: theme.textMuted,
+          font: { family: 'var(--font-sans)' },
+          callback: (value: number | string) => this.formatNumber(value as number),
+        },
+      };
+    }
 
     const config: ChartConfiguration = {
       type: suggestion.type as ChartType,
@@ -118,29 +237,25 @@ export class ResultChartComponent implements OnDestroy {
         maintainAspectRatio: false,
         interaction: { mode: 'index', intersect: false },
         plugins: {
-          legend: { display: datasets.length > 1, position: 'top' as const },
-          tooltip: { enabled: true },
-        },
-        scales: {
-          x: {
-            grid: { display: false },
-            ticks: { color: 'var(--text-muted)', font: { family: 'var(--font-sans)' } },
-          },
-          y: {
-            type: 'linear',
-            display: true,
-            position: 'left',
-            grid: { color: 'var(--border-color)' },
-            ticks: { color: 'var(--text-muted)', font: { family: 'var(--font-sans)' } },
-          },
-          y1: {
-            type: 'linear',
-            display: true,
-            position: 'right',
-            grid: { drawOnChartArea: false },
-            ticks: { color: 'var(--text-muted)', font: { family: 'var(--font-sans)' } },
+          legend: { display: datasets.length > 1, position: 'top' as const, labels: { color: theme.textSecondary, font: { family: 'var(--font-sans)' } } },
+          tooltip: {
+            enabled: true,
+            backgroundColor: theme.surfaceColor,
+            titleColor: theme.textPrimary,
+            bodyColor: theme.textSecondary,
+            borderColor: theme.borderColor,
+            borderWidth: 1,
+            padding: 12,
+            callbacks: {
+              label: (context) => {
+                const label = context.dataset.label || '';
+                const value = context.parsed.y as number;
+                return `${label}: ${this.formatNumber(value)}`;
+              },
+            },
           },
         },
+        scales,
       },
     };
 
@@ -159,7 +274,7 @@ export class ResultChartComponent implements OnDestroy {
     rows: unknown[][],
     columnName: string
   ): boolean {
-    const firstValues = rows.map((r) => (r[firstYIndex] as number) ?? 0);
+    const firstValues = rows.map((r) => Number(r[firstYIndex] ?? 0));
     const firstMax = Math.max(...firstValues.filter((v) => v > 0), 1);
     const thisMax = Math.max(...values.filter((v) => v > 0), 1);
 
@@ -177,21 +292,10 @@ export class ResultChartComponent implements OnDestroy {
     );
   }
 
-  private getColor(index: number, isRightAxis: boolean, transparent = false): string {
-    const accent = '59, 130, 246'; // azul #3b82f6
-    const accentRight = '234, 88, 12'; // naranja suave #ea580c para eje derecho
-
-    const rgb = isRightAxis ? accentRight : accent;
-    const alpha = transparent ? 0.15 : 1;
-
-    // Variantes sobrias: acento principal + variantes para múltiples series
-    const variants = [
-      `rgba(${rgb}, ${alpha})`,
-      `rgba(16, 185, 129, ${alpha})`, // verde esmeralda
-      `rgba(168, 85, 247, ${alpha})`, // violeta
-      `rgba(234, 179, 8, ${alpha})`, // ámbar
-    ];
-
-    return variants[index % variants.length];
+  private formatNumber(value: number): string {
+    return new Intl.NumberFormat(undefined, {
+      maximumFractionDigits: 2,
+      useGrouping: true,
+    }).format(value);
   }
 }
