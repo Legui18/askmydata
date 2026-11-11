@@ -131,6 +131,7 @@ export class ChatPageComponent implements OnDestroy {
       const last = turns[turns.length - 1];
       return [...turns.slice(0, -1), { ...last, ...partial }];
     });
+    this.isLoading.set(false);
   }
 
   ngOnDestroy(): void {
