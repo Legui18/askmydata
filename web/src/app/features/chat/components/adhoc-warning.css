@@ -1,0 +1,28 @@
+.warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.warning-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.75rem 1rem;
+  background: var(--warning-bg);
+  border: 1px solid var(--warning-border);
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+.warning-icon {
+  flex-shrink: 0;
+  color: var(--warning-icon);
+  font-size: 1rem;
+  line-height: 1.4;
+}
+
+.warning-text {
+  color: var(--warning-text);
+  line-height: 1.4;
+}

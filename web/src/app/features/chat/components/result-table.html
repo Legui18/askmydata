@@ -1,0 +1,27 @@
+<div class="table-wrapper">
+  <table class="result-table">
+    <thead>
+      <tr>
+        @for (col of columns(); track col.name) {
+          <th>{{ col.name }} <span class="type-badge">{{ col.type }}</span></th>
+        }
+      </tr>
+    </thead>
+    <tbody>
+      @for (row of rows(); track $index) {
+        <tr>
+          @for (cell of row; track $index) {
+            <td>{{ cell }}</td>
+          }
+        </tr>
+      } @empty {
+        <tr>
+          <td [attr.colspan]="columns().length" class="empty-state">Sin resultados</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+@if (truncated()) {
+  <p class="truncated-notice">Resultado truncado</p>
+}

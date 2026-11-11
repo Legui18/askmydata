@@ -1,0 +1,10 @@
+@if (warnings().length > 0) {
+  <div class="warnings" role="status" aria-live="polite">
+    @for (w of warnings(); track $index) {
+      <div class="warning-banner">
+        <span class="warning-icon" aria-hidden="true">⚠</span>
+        <span class="warning-text">{{ w }}</span>
+      </div>
+    }
+  </div>
+}

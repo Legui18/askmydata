@@ -1,0 +1,13 @@
+<div class="sql-viewer">
+  <button class="sql-toggle" (click)="toggle()" [attr.aria-expanded]="expanded()" aria-controls="sql-content">
+    <span class="toggle-icon">{{ expanded() ? '−' : '+' }}</span>
+    <span>SQL</span>
+  </button>
+
+  <div id="sql-content" class="sql-content" [hidden]="!expanded()">
+    <pre><code>{{ sql() }}</code></pre>
+    <button class="copy-btn" (click)="copy()" [attr.aria-label]="copied() ? 'Copiado' : 'Copiar al portapapeles'">
+      {{ copied() ? 'Copiado' : 'Copiar' }}
+    </button>
+  </div>
+</div>
