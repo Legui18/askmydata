@@ -16,6 +16,7 @@ export interface Turn {
   isLoading: boolean;
   error?: string;
   warningMessages: string[];
+  truncated: boolean;
 }
 
 @Component({
@@ -63,6 +64,7 @@ export class ChatPageComponent implements OnDestroy {
       response: null,
       isLoading: true,
       warningMessages: [],
+      truncated: false,
     };
     this.turns.update((t) => [...t, newTurn]);
     this.question.set('');
@@ -93,6 +95,7 @@ export class ChatPageComponent implements OnDestroy {
       response,
       isLoading: false,
       warningMessages: response.warnings ?? [],
+      truncated: response.truncated,
     });
   }
 
@@ -104,6 +107,7 @@ export class ChatPageComponent implements OnDestroy {
       response,
       isLoading: false,
       warningMessages: [],
+      truncated: false,
     });
   }
 
@@ -113,6 +117,7 @@ export class ChatPageComponent implements OnDestroy {
       isLoading: false,
       error: error.message,
       warningMessages: [],
+      truncated: false,
     });
   }
 
@@ -123,6 +128,7 @@ export class ChatPageComponent implements OnDestroy {
       isLoading: false,
       error: message,
       warningMessages: [],
+      truncated: false,
     });
   }
 

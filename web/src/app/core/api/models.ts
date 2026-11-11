@@ -6,7 +6,6 @@ export interface Column {
 export interface Result {
   columns: Column[];
   rows: unknown[][];
-  truncated: boolean;
 }
 
 export interface ChartSuggestion {
@@ -15,25 +14,22 @@ export interface ChartSuggestion {
   yColumns: string[];
 }
 
-export interface MetricUsage {
-  name: string;
-  value: number;
-  unit: string;
-}
-
 export interface Usage {
   promptTokens: number;
   completionTokens: number;
   totalTokens: number;
+  estimatedCostUsd: number;
+  elapsedMs: number;
 }
 
 export interface AskResponse {
   conversationId: string;
   sql: string;
   result: Result;
+  truncated: boolean;
   chartSuggestion: ChartSuggestion | null;
-  explanation: string | null;
-  metricUsage: MetricUsage[];
+  explanation: string;
+  metricUsage: string[];
   warnings: string[];
   usage: Usage;
 }
