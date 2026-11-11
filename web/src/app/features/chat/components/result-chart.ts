@@ -25,15 +25,37 @@ export class ResultChartComponent implements OnDestroy {
   canvasRef = viewChild.required<ElementRef<HTMLCanvasElement>>('chartCanvas');
   chart = signal<Chart | null>(null);
 
+  // Referencias previas para detectar cambios reales (no solo nueva emisión de signal)
+  private prevSuggestion: ChartSuggestion | null = null;
+  private prevColumns: Column[] | null = null;
+  private prevRows: unknown[][] | null = null;
+
   constructor() {
     effect(() => {
       const suggestion = this.chartSuggestion();
       const cols = this.columns();
       const data = this.rows();
 
-      if (suggestion && suggestion.type !== 'table-only' && cols.length > 0 && data.length > 0) {
+      // Solo re-renderizar si hay datos válidos Y cambió algo relevante (por referencia)
+      const shouldRender =
+        suggestion &&
+        suggestion.type !== 'table-only' &&
+        cols.length > 0 &&
+        data.length > 0 &&
+        (suggestion !== this.prevSuggestion ||
+          cols !== this.prevColumns ||
+          data !== this.prevRows);
+
+      if (shouldRender) {
+        this.prevSuggestion = suggestion;
+        this.prevColumns = cols;
+        this.prevRows = data;
         this.renderChart(suggestion, cols, data);
-      } else {
+      } else if (!suggestion || suggestion.type === 'table-only' || cols.length === 0 || data.length === 0) {
+        // Limpiar referencias previas si ya no hay datos válidos
+        this.prevSuggestion = null;
+        this.prevColumns = null;
+        this.prevRows = null;
         this.destroyChart();
       }
     });

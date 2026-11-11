@@ -1,8 +1,8 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpErrorResponse } from '@angular/common/http';
-import { Observable, throwError } from 'rxjs';
+import { Observable, of } from 'rxjs';
 import { catchError, map } from 'rxjs/operators';
-import { AskResponse, RefusalResponse, AskApiResult } from './models';
+import { AskResponse, RefusalResponse } from './models';
 
 export interface ApiError {
   message: string;
@@ -14,20 +14,28 @@ export class AskApiService {
   private readonly http = inject(HttpClient);
   private readonly endpoint = '/api/ask';
 
-  ask(question: string, conversationId?: string): Observable<AskApiResult | ApiError> {
+  ask(question: string, conversationId?: string): Observable<AskResponse | RefusalResponse | ApiError> {
     const body = conversationId ? { question, conversationId } : { question };
 
     return this.http.post<AskResponse | RefusalResponse>(this.endpoint, body).pipe(
-      map((response) => response as AskApiResult),
+      map((response) => {
+        if ('reasonCode' in response && response.reasonCode === 'REFUSED') {
+          return response as RefusalResponse;
+        }
+        return response as AskResponse;
+      }),
       catchError((error: HttpErrorResponse) => {
         if (error.status === 422) {
-          return throwError(() => error.error as RefusalResponse);
+          const refusal = error.error as RefusalResponse;
+          if (refusal?.reasonCode === 'REFUSED') {
+            return of(refusal);
+          }
         }
         const apiError: ApiError = {
           message: this.getErrorMessage(error),
           status: error.status,
         };
-        return throwError(() => apiError);
+        return of(apiError);
       })
     );
   }

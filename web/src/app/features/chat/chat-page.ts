@@ -1,8 +1,9 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, computed, inject, OnDestroy } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Subject, takeUntil } from 'rxjs';
 import { AskApiService, ApiError } from '../../core/api/ask-api.service';
-import { AskResponse, RefusalResponse, ChartSuggestion, Warning } from '../../core/api/models';
+import { AskResponse, RefusalResponse, Warning } from '../../core/api/models';
 import { ResultTableComponent } from './components/result-table';
 import { SqlViewerComponent } from './components/sql-viewer';
 import { AdhocWarningComponent } from './components/adhoc-warning';
@@ -32,8 +33,9 @@ export interface Turn {
   templateUrl: './chat-page.html',
   styleUrl: './chat-page.css',
 })
-export class ChatPageComponent {
+export class ChatPageComponent implements OnDestroy {
   private readonly api = inject(AskApiService);
+  private readonly destroy$ = new Subject<void>();
 
   turns = signal<Turn[]>([]);
   conversationId = signal<string | null>(null);
@@ -49,7 +51,7 @@ export class ChatPageComponent {
     'Monthly user growth trend',
   ];
 
-  async send(): Promise<void> {
+  send(): void {
     const q = this.question().trim();
     if (!q || this.isLoading()) return;
 
@@ -65,29 +67,23 @@ export class ChatPageComponent {
     this.turns.update((t) => [...t, newTurn]);
     this.question.set('');
 
-    try {
-      const result = await this.api
-        .ask(q, this.conversationId() || undefined)
-        .toPromise();
+    this.api
+      .ask(q, this.conversationId() || undefined)
+      .pipe(takeUntil(this.destroy$))
+      .subscribe({
+        next: (result) => this.handleResult(result),
+        error: (err: unknown) => this.handleUnexpectedError(err),
+        complete: () => {},
+      });
+  }
 
-      if (result && this.isRefusal(result)) {
-        this.handleRefusal(result);
-      } else if (result && this.isApiError(result)) {
-        this.handleApiError(result);
-      } else if (result && this.isSuccess(result)) {
-        this.handleSuccess(result);
-      }
-    } catch (err: unknown) {
-      if (err && typeof err === 'object' && 'message' in err && !this.isRefusal(err)) {
-        this.handleApiError(err as ApiError);
-      } else if (this.isRefusal(err)) {
-        this.handleRefusal(err);
-      } else {
-        this.handleApiError({
-          message: 'Error inesperado. Inténtalo de nuevo.',
-          status: 0,
-        });
-      }
+  private handleResult(result: AskResponse | RefusalResponse | ApiError): void {
+    if (this.isRefusal(result)) {
+      this.handleRefusal(result);
+    } else if (this.isApiError(result)) {
+      this.handleApiError(result);
+    } else {
+      this.handleSuccess(result);
     }
   }
 
@@ -96,7 +92,7 @@ export class ChatPageComponent {
     this.updateLastTurn({
       response,
       isLoading: false,
-      warningMessages: response.warnings.map((w: Warning) => w.message),
+      warningMessages: response.warnings?.map((w: Warning) => w.message) ?? [],
     });
   }
 
@@ -120,12 +116,26 @@ export class ChatPageComponent {
     });
   }
 
+  private handleUnexpectedError(err: unknown): void {
+    const message = err instanceof Error ? err.message : 'Error inesperado. Inténtalo de nuevo.';
+    this.updateLastTurn({
+      response: { message, status: 0 } as ApiError,
+      isLoading: false,
+      error: message,
+      warningMessages: [],
+    });
+  }
+
   private updateLastTurn(partial: Partial<Turn>): void {
     this.turns.update((turns) => {
       const last = turns[turns.length - 1];
       return [...turns.slice(0, -1), { ...last, ...partial }];
     });
-    this.isLoading.set(false);
+  }
+
+  ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
   }
 
   newConversation(): void {

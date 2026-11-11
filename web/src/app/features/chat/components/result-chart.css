@@ -8,7 +8,5 @@
   position: relative;
 }
 
-.chart-container canvas {
-  width: 100% !important;
-  height: 100% !important;
-}
+/* Chart.js controla el tamaño del canvas con responsive: true + maintainAspectRatio: false.
+   NO forzar width/height en el canvas: causa bucle infinito de resize/render. */
