@@ -3,7 +3,7 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { Subject, takeUntil } from 'rxjs';
 import { AskApiService, ApiError } from '../../core/api/ask-api.service';
-import { AskResponse, RefusalResponse, Warning } from '../../core/api/models';
+import { AskResponse, RefusalResponse } from '../../core/api/models';
 import { ResultTableComponent } from './components/result-table';
 import { SqlViewerComponent } from './components/sql-viewer';
 import { AdhocWarningComponent } from './components/adhoc-warning';
@@ -92,7 +92,7 @@ export class ChatPageComponent implements OnDestroy {
     this.updateLastTurn({
       response,
       isLoading: false,
-      warningMessages: response.warnings?.map((w: Warning) => w.message) ?? [],
+      warningMessages: response.warnings ?? [],
     });
   }
 

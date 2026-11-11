@@ -25,4 +25,6 @@
 .warning-text {
   color: var(--warning-text);
   line-height: 1.4;
+  /* Force text visibility in case of CSS variable inheritance issues */
+  opacity: 1;
 }

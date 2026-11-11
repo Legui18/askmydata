@@ -21,11 +21,6 @@ export interface MetricUsage {
   unit: string;
 }
 
-export interface Warning {
-  code: string;
-  message: string;
-}
-
 export interface Usage {
   promptTokens: number;
   completionTokens: number;
@@ -39,7 +34,7 @@ export interface AskResponse {
   chartSuggestion: ChartSuggestion | null;
   explanation: string | null;
   metricUsage: MetricUsage[];
-  warnings: Warning[];
+  warnings: string[];
   usage: Usage;
 }
 

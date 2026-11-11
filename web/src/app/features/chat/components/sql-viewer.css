@@ -44,6 +44,28 @@
   border-radius: 6px;
   overflow-x: auto;
   max-height: 300px;
+  /* Scrollbar styling for light/dark theme */
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-color) transparent;
+}
+
+.sql-content pre::-webkit-scrollbar {
+  height: 8px;
+}
+
+.sql-content pre::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.sql-content pre::-webkit-scrollbar-thumb {
+  background-color: var(--border-color);
+  border-radius: 4px;
+  border: 2px solid transparent;
+  background-clip: content-box;
+}
+
+.sql-content pre::-webkit-scrollbar-thumb:hover {
+  background-color: var(--text-muted);
 }
 
 .sql-content code {

@@ -14,7 +14,7 @@
   /* Warning */
   --warning-bg: #fefce8;
   --warning-border: #fde047;
-  --warning-text: #854d0e;
+  --warning-text: #78350f;
   --warning-icon: #ca8a04;
 
   /* Refusal */
@@ -39,8 +39,8 @@
     --border-color: #262626;
     --accent-color: #60a5fa;
 
-    --warning-bg: #362b00;
-    --warning-border: #716000;
+    --warning-bg: #453400;
+    --warning-border: #854d0e;
     --warning-text: #fde047;
     --warning-icon: #facc15;
 
