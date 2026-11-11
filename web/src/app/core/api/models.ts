@@ -10,7 +10,7 @@ export interface Result {
 }
 
 export interface ChartSuggestion {
-  type: string;
+  type: 'bar' | 'line' | 'table-only';
   xColumn: string;
   yColumns: string[];
 }

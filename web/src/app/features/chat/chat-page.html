@@ -1,0 +1,83 @@
+<div class="chat-page">
+  <header class="chat-header">
+    <h1>Ask My Data</h1>
+    <button class="new-conversation-btn" (click)="newConversation()" [disabled]="turns().length === 0">
+      Nueva conversación
+    </button>
+  </header>
+
+  <main class="chat-main">
+    @if (showEmptyState()) {
+      <div class="empty-state">
+        <p class="empty-hint">Ejemplos de preguntas:</p>
+        <div class="examples">
+          @for (ex of exampleQuestions; track ex) {
+            <button class="example-btn" (click)="question.set(ex); send()">{{ ex }}</button>
+          }
+        </div>
+      </div>
+    } @else {
+      <div class="messages" #messages>
+        @for (turn of turns(); track $index) {
+          <div class="message-card">
+            <div class="question">{{ turn.question }}</div>
+
+            <div class="response">
+              @if (turn.isLoading) {
+                <div class="loading">Pensando...</div>
+              } @else if (isRefusal(turn.response)) {
+                <app-refusal-message [refusal]="turn.response.refusal" />
+              } @else if (isApiError(turn.response)) {
+                <div class="error-message">{{ turn.response.message }}</div>
+              } @else if (isSuccess(turn.response)) {
+                @if (turn.response.explanation) {
+                  <div class="explanation">{{ turn.response.explanation }}</div>
+                }
+
+                @if (turn.response.chartSuggestion) {
+                  <app-result-chart
+                    [columns]="turn.response.result.columns"
+                    [rows]="turn.response.result.rows"
+                    [chartSuggestion]="turn.response.chartSuggestion"
+                  />
+                }
+
+                <app-result-table
+                  [columns]="turn.response.result.columns"
+                  [rows]="turn.response.result.rows"
+                  [truncated]="turn.response.result.truncated"
+                />
+
+                <app-adhoc-warning [warnings]="turn.warningMessages" />
+
+                <app-sql-viewer [sql]="turn.response.sql" />
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </main>
+
+  <footer class="chat-footer">
+    <textarea
+      #input
+      class="question-input"
+      [value]="question()"
+      (input)="onQuestionInput($event)"
+      (keydown)="onKeydown($event)"
+      [disabled]="isLoading()"
+      placeholder="Escribe tu pregunta... (Enter para enviar, Shift+Enter para salto de línea)"
+      rows="1"
+      aria-label="Pregunta"
+    ></textarea>
+    <button class="send-btn" (click)="send()" [disabled]="!question().trim() || isLoading()">
+      @if (isLoading()) {
+        <span class="spinner" aria-hidden="true"></span>
+        Pensando...
+      } @else {
+        Enviar
+      }
+    </button>
+  </footer>
+</div>

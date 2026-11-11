@@ -1,1 +1,75 @@
-/* You can add global styles to this file, and also import other style files */
+:root {
+  /* Light theme (default) */
+  --bg-color: #fafafa;
+  --surface-color: #ffffff;
+  --surface-hover: #f5f5f5;
+  --text-primary: #171717;
+  --text-secondary: #525252;
+  --text-muted: #a3a3a3;
+  --border-color: #e5e5e5;
+  --accent-color: #3b82f6;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, 'SF Mono', Menlo, Consolas, 'Liberation Mono', monospace;
+
+  /* Warning */
+  --warning-bg: #fefce8;
+  --warning-border: #fde047;
+  --warning-text: #854d0e;
+  --warning-icon: #ca8a04;
+
+  /* Refusal */
+  --refusal-bg: #f5f5f5;
+  --refusal-border: #e5e5e5;
+  --refusal-text: #525252;
+
+  /* Error */
+  --error-bg: #fef2f2;
+  --error-border: #fecaca;
+  --error-text: #dc2626;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-color: #0a0a0a;
+    --surface-color: #171717;
+    --surface-hover: #262626;
+    --text-primary: #fafafa;
+    --text-secondary: #d4d4d4;
+    --text-muted: #737373;
+    --border-color: #262626;
+    --accent-color: #60a5fa;
+
+    --warning-bg: #362b00;
+    --warning-border: #716000;
+    --warning-text: #fde047;
+    --warning-icon: #facc15;
+
+    --refusal-bg: #262626;
+    --refusal-border: #404040;
+    --refusal-text: #d4d4d4;
+
+    --error-bg: #450a0a;
+    --error-border: #7f1d1d;
+    --error-text: #fca5a5;
+  }
+}
+
+/* Reset base */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--bg-color);
+  color: var(--text-primary);
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

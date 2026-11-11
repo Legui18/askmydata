@@ -1,18 +1,13 @@
 import { Component, input, viewChild, ElementRef, effect, OnDestroy, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Chart, ChartConfiguration, ChartType, registerables } from 'chart.js';
+import { ChartSuggestion } from '../../../core/api/models';
 
 Chart.register(...registerables);
 
 export interface Column {
   name: string;
   type: string;
-}
-
-export interface ChartSuggestion {
-  type: 'bar' | 'line' | 'table-only';
-  xColumn: string;
-  yColumns: string[];
 }
 
 @Component({
@@ -67,14 +62,14 @@ export class ResultChartComponent implements OnDestroy {
     if (xIndex === -1) return;
 
     const yIndices = suggestion.yColumns
-      .map((name) => cols.findIndex((c) => c.name === name))
-      .filter((i) => i !== -1);
+      .map((name: string) => cols.findIndex((c) => c.name === name))
+      .filter((i: number) => i !== -1);
 
     if (yIndices.length === 0) return;
 
     const xValues = rows.map((r) => r[xIndex] ?? '');
 
-    const datasets = yIndices.map((yIndex, idx) => {
+    const datasets = yIndices.map((yIndex: number, idx: number) => {
       const col = cols[yIndex];
       const values = rows.map((r) => (r[yIndex] as number) ?? 0);
       const isRightAxis = this.shouldUseRightAxis(values, yIndices[0], rows, col.name);
