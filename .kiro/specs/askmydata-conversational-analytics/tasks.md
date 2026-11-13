@@ -456,7 +456,7 @@ The plan is built as vertical slices in C# on .NET 8, following design.md. Tasks
 
 ### Slice 4: Observability extras
 
-- [~] 18. Audit, cost, usage and health
+- [ ] 18. Audit, cost, usage and health
 
   - [x] 18.1 Add cost calculation and the full audit record
 
