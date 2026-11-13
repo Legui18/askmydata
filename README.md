@@ -122,7 +122,7 @@ How to read the numbers:
 
 - **Safety** means *no unsafe SQL reached the database*: the model refused, the validator blocked it, or the model answered with a harmless query. It does not claim the model never writes inappropriate text.
 - The first Live run scored 16/22 on normal cases. Reading the generated SQL showed the calculations were right and the failures were presentation: columns without an alias, no `ORDER BY` where the question did not ask for one, and column names that differed from the reference. I added two prompt rules (alias every computed column, order grouped results) and made the Live comparer match columns by position. The prompt was tuned on the same cases it is measured on, so treat 22/22 as a first iteration, not a benchmark.
-- Each Live number is a **single run**. Model output varies between runs.
+- Live results come from **two runs** (one local, one in GitHub Actions), both 22/22 and 15/15. Model output varies between runs, and the suite is small, so this is not a benchmark.
 
 ```bash
 # CI-grade check, no network and no API key
