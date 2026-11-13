@@ -82,6 +82,24 @@ export Llm__Provider=Gemini
 export Llm__Gemini__ApiKey="<your key>"
 export Llm__Gemini__Model="<a current Gemini model name>"
 ```
+## Web UI
+
+A chat interface in [`web/`](web) built with Angular (standalone components, TypeScript) and Chart.js.
+
+- Follow-up questions reuse the `conversationId`, so "now show it only for the East region" works.
+- Each answer shows the explanation, a chart, the result table and the SQL (collapsed, with a copy button).
+- The chart is hidden when it would not be readable (too many rows, or only identifier columns).
+- When the series have very different scales (for example revenue and a percentage), the chart uses a second Y axis. This is a heuristic.
+- Ad hoc calculations show the API warning; refusals show a neutral card with the refusal text.
+- Responsive layout for mobile.
+
+```bash
+cd web
+npm install
+npm start    # http://localhost:4200, proxies /api to http://localhost:8080
+```
+
+The API must be running first (`docker compose up`).
 
 ## Sample data and metrics
 
@@ -96,7 +114,7 @@ The suite has **37 cases**: 22 normal questions (single metrics, dimensions and 
 | Mode                             | What it measures                                                                                                               | Normal cases | Adversarial cases |
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | ------------ | ----------------- |
 | Stub                             | Pipeline and security, with recorded model answers. **Not** model accuracy. Runs on every pull request and must be 100%. | 22/22        | 15/15             |
-| Live (`gemini-3.5-flash-lite`) | Accuracy and safety with a real model. Manual or nightly; never gates CI.                                                      | 22/22        | 15/15             |
+| Live (`gemini-3.5-flash-lite`) | Accuracy and safety with a real model. Run manually from GitHub Actions; never gates CI.                                                      | 22/22        | 15/15             |
 
 Live run: 37,927 prompt and 3,751 completion tokens, about 4.5 minutes with a pause between cases to respect free-tier rate limits.
 
@@ -148,7 +166,7 @@ Dependencies point inwards only: Domain depends on nothing, Application depends 
 
 ## Roadmap
 
-- A web chat UI (Vue 3) showing the table, chart, explanation and the SQL, as a separate spec
+- Deploy a public demo (VPS, Docker Compose, HTTPS)
 - Canonical ordering of commutative operands in the metric check
 - Persistent conversation store
 
