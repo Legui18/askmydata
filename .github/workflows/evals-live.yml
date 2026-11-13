@@ -35,7 +35,7 @@ jobs:
         continue-on-error: true
         env:
           Llm__Gemini__ApiKey: ${{ secrets.GEMINI_API_KEY }}
-        run: dotnet run --project tests/AskMyData.Evals -c Release -- --mode live --out artifacts/evals
+        run: dotnet run --project tests/AskMyData.Evals -c Release -- --mode live --out artifacts/evals --delay-ms 6000
 
       - name: Upload accuracy report
         if: always()
