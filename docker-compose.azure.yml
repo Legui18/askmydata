@@ -1,0 +1,22 @@
+# Stack for a server using Azure SQL Database: only the API and the web container.
+# The connection string comes from the environment (AZURE_SQL_CONNECTION), never from the repo.
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/AskMyData.Api/Dockerfile
+    restart: unless-stopped
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ConnectionStrings__ReadOnly: ${AZURE_SQL_CONNECTION:?Set AZURE_SQL_CONNECTION}
+      Llm__Provider: ${LLM_PROVIDER:-Stub}
+      Llm__Gemini__ApiKey: ${GEMINI_API_KEY:-}
+      Llm__Gemini__Model: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
+
+  web:
+    build: ./web
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-80}:80"
